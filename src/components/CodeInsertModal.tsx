@@ -8,23 +8,16 @@ import {
     Textarea,
     TextInput,
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useLabStore } from '../state/useLabStore';
 import { useT } from '../i18n/useT';
+import { sanitizeLabel, slugifyLabel } from '../utils/label';
 
 interface Props {
     opened: boolean;
     labId: string;
     onClose: () => void;
     onInsert: (snippet: string) => void;
-}
-
-function slugify(s: string): string {
-    const cleaned = s
-        .toLowerCase()
-        .replace(/[^a-z0-9-_]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 40);
-    return cleaned || 'code';
 }
 
 export function CodeInsertModal({ opened, labId, onClose, onInsert }: Props) {
@@ -41,26 +34,37 @@ export function CodeInsertModal({ opened, labId, onClose, onInsert }: Props) {
 
     const handleInsert = () => {
         if (!code.trim()) return;
-        const labelToUse = (label.trim() || slugify(caption || 'code')).replace(/[^A-Za-z0-9_\-:.]/g, '');
+
+        const sanitized = sanitizeLabel(label);
+        const finalLabel = sanitized || slugifyLabel(caption || 'code');
+
+        if (!sanitized && label.trim()) {
+            notifications.show({
+                color: 'yellow',
+                title: 'Label adjusted',
+                message: `Label can only contain letters, digits, and "-", and must start with a letter. Using "${finalLabel}" instead.`,
+                autoClose: 5000,
+            });
+        }
+
         const safeCaption = caption.replace(/"/g, '\\"');
         const trimmed = code.replace(/\s+$/, '');
 
-        // #figure(caption: "...")[
-        // ```java
-        // code
-        // ```
-        // ] <label>
         const lines: string[] = [];
         lines.push('');
         lines.push(`#figure(caption: "${safeCaption}")[`);
         lines.push('```' + language);
         lines.push(trimmed);
         lines.push('```');
-        lines.push(`] <${labelToUse}>`);
+        lines.push(`] <${finalLabel}>`);
         lines.push('');
 
         onInsert(lines.join('\n'));
-        registerLabel(labId, { label: labelToUse, kind: 'code', title: caption || labelToUse });
+        registerLabel(labId, {
+            label: finalLabel,
+            kind: 'code',
+            title: caption || finalLabel,
+        });
 
         setCode('');
         setLabel('');
@@ -86,6 +90,7 @@ export function CodeInsertModal({ opened, labId, onClose, onInsert }: Props) {
                 />
                 <TextInput
                     label={t('imageLabelPrompt')}
+                    description='只允许英文字母、数字和连字符 "-"，且以字母开头 / Letters, digits, and "-" only; must start with a letter'
                     placeholder="e.g. code1"
                     value={label}
                     onChange={(e) => setLabel(e.currentTarget.value)}
@@ -99,7 +104,8 @@ export function CodeInsertModal({ opened, labId, onClose, onInsert }: Props) {
                     onChange={(e) => setCode(e.currentTarget.value)}
                     styles={{
                         input: {
-                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                            fontFamily:
+                                'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                             fontSize: 13,
                             lineHeight: 1.5,
                         },

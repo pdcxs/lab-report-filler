@@ -4,6 +4,7 @@ import { notifications } from '@mantine/notifications';
 import { open as openFile } from '@tauri-apps/plugin-dialog';
 import { useLabStore } from '../state/useLabStore';
 import { useT } from '../i18n/useT';
+import { sanitizeLabel, slugifyLabel } from '../utils/label';
 
 interface Props {
     opened: boolean;
@@ -50,17 +51,26 @@ export function ImageInsertModal({ opened, labId, onClose, onInsert }: Props) {
 
     const handleInsert = async () => {
         if (!srcPath) return;
-        if (!label.trim()) {
-            notifications.show({ color: 'red', title: 'Error', message: 'Label is required.' });
-            return;
+
+        const sanitized = sanitizeLabel(label);
+        const finalLabel = sanitized || slugifyLabel(caption || 'fig');
+
+        if (!sanitized && label.trim()) {
+            notifications.show({
+                color: 'yellow',
+                title: 'Label adjusted',
+                message: `Label can only contain letters, digits, "-", "_", ":", "." and must start with a letter. Using "${finalLabel}" instead.`,
+                autoClose: 5000,
+            });
         }
+
         setBusy(true);
         try {
             const imported = await importImage(srcPath);
             const safeCaption = caption.replace(/"/g, '\\"');
-            const snippet = `#figure(image("${imported.relativePath}", width: 80%), caption: "${safeCaption}") <${label}>`;
+            const snippet = `#figure(image("${imported.relativePath}", width: 80%), caption: "${safeCaption}") <${finalLabel}>`;
             onInsert(snippet);
-            registerLabel(labId, { label, kind: 'figure', title: caption || label });
+            registerLabel(labId, { label: finalLabel, kind: 'figure', title: caption || finalLabel });
             setSrcPath(null);
             setLabel('');
             setCaption('');
@@ -86,6 +96,7 @@ export function ImageInsertModal({ opened, labId, onClose, onInsert }: Props) {
                 </Group>
                 <TextInput
                     label={t('imageLabelPrompt')}
+                    description='只允许英文字母、数字、-、_、:、.，且以字母开头 / Letters, digits, "-", "_", ":", "." only; must start with a letter'
                     value={label}
                     onChange={(e) => setLabel(e.currentTarget.value)}
                     placeholder="fig1"
