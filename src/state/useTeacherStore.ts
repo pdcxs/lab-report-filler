@@ -5,151 +5,15 @@ import type {
     Experiment,
     LabConfig,
     SimpleFieldConfig,
-    StudentConfig,
     StudentIdConfig,
     StudentNameConfig,
     TypstConfig,
     ValidationRules,
 } from '../types/lab-config';
 
-function defaultExample(lang: 'zh' | 'en'): string {
-    if (lang === 'zh') {
-        return [
-            '// 本示例展示了实验记录的常见写法，以及 Typst 的一些基本用法。',
-            '// 请根据你的实际实验内容替换本示例。',
-            '',
-            '= Typst 基本用法速查（请在提交前删除本节）',
-            '',
-            '1. 空行才是真正的分段。',
-            '   在 Typst 中，单独一个换行不会产生新段落，只有空行才会分段。',
-            '   例如下面这行和上一行属于同一段落。',
-            '',
-            '   这一行因为前面有空行，所以属于新的段落。',
-            '',
-            '2. 尖括号包围的内容是"标签"，例如 <fig1> 或 <code1>。',
-            '   标签用来给图片、代码等对象取名字，方便后续引用。',
-            '',
-            '3. 使用 @标签名 引用标签，会自动生成编号并建立链接。',
-            '   例如：@fig1 会显示为"图 1"或类似形式，点击可跳到对应位置。',
-            '',
-            '4. 以 = 开头的行是一级标题，== 是二级标题，以此类推。',
-            '   = 一、实验目的',
-            '   == 1.1 子标题',
-            '',
-            '5. 使用反引号 `代码` 可以行内显示代码，例如 `System.out.println`。',
-            '   使用三个反引号包裹多行代码，详见下方"实验代码"一节。',
-            '',
-            '6. 数学公式用 $ ... $ 包裹，例如 $x^2 + y^2 = r^2$。',
-            '',
-            '// ---------- 以下为示例正文，请替换为你的实际内容 ----------',
-            '',
-            '= 一、实验目的',
-            '',
-            '简单说明本次实验要达到的目标。',
-            '',
-            '= 二、实验代码',
-            '',
-            '下面是本次实验的关键代码：',
-            '',
-            '#figure(caption: "Main.java")[',
-            '```java',
-            'public class Main {',
-            '    public static void main(String[] args) {',
-            '        System.out.println("Hello, world");',
-            '    }',
-            '}',
-            '```',
-            '] <code1>',
-            '',
-            '如 @code1 所示，程序通过 `System.out.println` 输出文本。',
-            '',
-            '= 三、运行结果',
-            '',
-            '运行程序后的输出如下图所示（实际使用中请点击 "Insert Image" 插入真实截图）：',
-            '',
-            '#figure(',
-            '  rect(width: 8cm, height: 5cm, stroke: 0.5pt)[此处插入运行结果截图],',
-            '  caption: "程序运行结果",',
-            ') <fig1>',
-            '',
-            '从 @fig1 可以看出，程序输出符合预期。',
-            '',
-            '= 四、分析与总结',
-            '',
-            '本次实验让我理解了 Java 程序的基本结构，以及如何编译和运行 Java 程序。',
-            '',
-            '// 提示：本示例中的 rect(...) 只是占位，请删除后用 "Insert Image" 按钮插入真实图片。',
-        ].join('\n');
-    } else {
-        return [
-            '// This sample shows common patterns for a lab record and some basic Typst usage.',
-            '// Replace it with your own content.',
-            '',
-            '= Typst Basics (delete this section before submitting)',
-            '',
-            '1. A blank line starts a new paragraph.',
-            '   A single newline is NOT a paragraph break — consecutive lines',
-            '   belong to the same paragraph.',
-            '',
-            '   This line starts a new paragraph because of the blank line above.',
-            '',
-            '2. Text wrapped in angle brackets is a "label", e.g. <fig1> or <code1>.',
-            '   Labels name figures, code blocks, and other objects so you can refer to them.',
-            '',
-            '3. Use @label to reference a label. Typst numbers and links it automatically.',
-            '   For example, @fig1 will render as "Figure 1" (or similar), and clicking it jumps',
-            '   to the referenced figure.',
-            '',
-            '4. A line starting with = is a level-1 heading, == is level-2, and so on.',
-            '   = 1. Objective',
-            '   == 1.1 Sub-heading',
-            '',
-            '5. Wrap inline code in backticks, e.g. `System.out.println`.',
-            '   Multi-line code uses triple backticks — see the "Code" section below.',
-            '',
-            '6. Math formulas are wrapped in $ ... $, e.g. $x^2 + y^2 = r^2$.',
-            '',
-            '// ---------- Sample body below — replace with your own content ----------',
-            '',
-            '= 1. Objective',
-            '',
-            'Briefly describe the goal of this experiment.',
-            '',
-            '= 2. Code',
-            '',
-            'The key code for this experiment is shown below:',
-            '',
-            '#figure(caption: "Main.java")[',
-            '```java',
-            'public class Main {',
-            '    public static void main(String[] args) {',
-            '        System.out.println("Hello, world");',
-            '    }',
-            '}',
-            '```',
-            '] <code1>',
-            '',
-            'As shown in @code1, the program prints text using `System.out.println`.',
-            '',
-            '= 3. Results',
-            '',
-            'The output after running the program is shown below (in practice, click "Insert Image" to insert a real screenshot):',
-            '',
-            '#figure(',
-            '  rect(width: 8cm, height: 5cm, stroke: 0.5pt)[Screenshot goes here],',
-            '  caption: "Program output",',
-            ') <fig1>',
-            '',
-            'From @fig1 we can see that the output matches expectations.',
-            '',
-            '= 4. Analysis and Conclusion',
-            '',
-            'This experiment helped me understand the basic structure of Java programs and how to compile and run them.',
-            '',
-            '// Tip: the rect(...) above is just a placeholder — delete it and use the "Insert Image" button to add a real screenshot.',
-        ].join('\n');
-    }
-}
+// =====================================================================
+// 默认模板
+// =====================================================================
 
 function defaultTypst(): TypstConfig {
     return {
@@ -221,41 +85,201 @@ function defaultValidation(): ValidationRules {
     };
 }
 
-function defaultStudentName(): StudentNameConfig {
-    return {
-        label: '中文姓名',
-        placeholder: '例如：张三',
-        hint: '必须至少包含一个中文字符。',
-        minLength: 2,
-        maxLength: 20,
-        requireCjk: true,
-    };
+// =====================================================================
+// 字段配置（按语言）
+// =====================================================================
+
+function defaultStudentName(lang: 'zh' | 'en'): StudentNameConfig {
+    return lang === 'zh'
+        ? {
+            label: '中文姓名',
+            placeholder: '例如：张三',
+            hint: '必须至少包含一个中文字符。',
+            minLength: 2,
+            maxLength: 20,
+            requireCjk: true,
+        }
+        : {
+            label: 'Chinese Name',
+            placeholder: 'eg. 张三',
+            hint: 'Must contain at least one Chinese character.',
+            minLength: 2,
+            maxLength: 20,
+            requireCjk: true,
+        };
 }
 
-function defaultStudentId(): StudentIdConfig {
-    return {
-        label: '学号',
-        placeholder: '例如：00123400',
-        pattern: '^[A-Za-z0-9]{4,20}$',
-    };
+function defaultStudentId(lang: 'zh' | 'en'): StudentIdConfig {
+    return lang === 'zh'
+        ? {
+            label: '学号',
+            placeholder: '例如：00123400',
+            pattern: '^[A-Za-z0-9]{4,20}$',
+        }
+        : {
+            label: 'Student ID',
+            placeholder: 'eg. 00123400',
+            pattern: '^[A-Za-z0-9]{4,20}$',
+        };
 }
 
-function defaultClassName(): SimpleFieldConfig {
-    return { label: '班级', placeholder: '例如：计算机LY2501' };
+function defaultClassName(lang: 'zh' | 'en'): SimpleFieldConfig {
+    return lang === 'zh'
+        ? { label: '班级', placeholder: '例如：计算机LY2501' }
+        : { label: 'Class', placeholder: 'eg. 计算机LY2501' };
 }
 
-function defaultLocation(): SimpleFieldConfig {
-    return { label: '实验地点', placeholder: '例如：E206' };
+function defaultLocation(lang: 'zh' | 'en'): SimpleFieldConfig {
+    return lang === 'zh'
+        ? { label: '实验地点', placeholder: '例如：E206' }
+        : { label: 'Location', placeholder: 'eg. E206' };
 }
 
-function defaultStudent(): StudentConfig {
-    return {
-        name: defaultStudentName(),
-        studentId: defaultStudentId(),
-        className: defaultClassName(),
-        location: defaultLocation(),
-    };
+// =====================================================================
+// 示例内容（按语言）
+// =====================================================================
+
+function defaultExample(lang: 'zh' | 'en'): string {
+    if (lang === 'zh') {
+        return [
+            '// 本示例展示了实验记录的常见写法，以及 Typst 的一些基本用法。',
+            '// 请根据你的实际实验内容替换本示例。',
+            '',
+            '= Typst 基本用法（提交前请删除本节）',
+            '',
+            '1. 空行才是真正的分段。',
+            '   单独一个换行不会产生新段落，连续的多行会属于同一段落。',
+            '',
+            '   这一行因为前面有空行，所以属于新的段落。',
+            '',
+            '2. 尖括号包围的内容是"标签"，例如 `<fig1>` 或 `<code1>`。',
+            '   标签用来给图片、代码等对象命名，方便后续引用。',
+            '',
+            '3. 使用 `@标签名` 来引用标签，Typst 会自动编号并建立链接。',
+            '   例如 `@fig1` 会渲染成"图 1"（或类似形式），点击可跳到对应位置。',
+            '',
+            '4. 以 = 开头的行是一级标题，== 是二级标题，以此类推。',
+            '   = 一、实验目的',
+            '   == 1.1 子标题',
+            '',
+            '5. 使用反引号包裹内容可以行内显示代码，例如 `System.out.println`。',
+            '   多行代码使用三个反引号包裹，详见下方"实验代码"一节。',
+            '',
+            '6. 数学公式用 `$ ... $` 包裹，例如 $x^2 + y^2 = r^2$。',
+            '',
+            '// ---------- 以下为示例正文，请替换为你的实际内容 ----------',
+            '',
+            '= 一、实验目的',
+            '',
+            '简单说明本次实验要达到的目标。',
+            '',
+            '= 二、实验代码',
+            '',
+            '下面是本次实验的关键代码：',
+            '',
+            '#figure(caption: "Main.java")[',
+            '```java',
+            'public class Main {',
+            '    public static void main(String[] args) {',
+            '        System.out.println("Hello, world");',
+            '    }',
+            '}',
+            '```',
+            '] <code1>',
+            '',
+            '如 @code1 所示，程序通过 `System.out.println` 输出文本。',
+            '',
+            '= 三、运行结果',
+            '',
+            '运行程序后的输出如下图所示（实际使用中请点击 "Insert Image" 插入真实截图）：',
+            '',
+            '#figure(',
+            '  rect(width: 8cm, height: 5cm, stroke: 0.5pt)[此处插入运行结果截图],',
+            '  caption: "程序运行结果",',
+            ') <fig1>',
+            '',
+            '从 @fig1 可以看出，程序输出符合预期。',
+            '',
+            '= 四、分析与总结',
+            '',
+            '本次实验让我理解了 Java 程序的基本结构，以及如何编译和运行 Java 程序。',
+            '',
+            '// 提示：本示例中的 rect(...) 只是占位，请删除后用 "Insert Image" 按钮插入真实图片。',
+        ].join('\n');
+    } else {
+        return [
+            '// This sample shows common patterns for a lab record and some basic Typst usage.',
+            '// Replace it with your own content.',
+            '',
+            '= Typst Basics (delete this section before submitting)',
+            '',
+            '1. A blank line starts a new paragraph.',
+            '   A single newline is NOT a paragraph break — consecutive lines',
+            '   belong to the same paragraph.',
+            '',
+            '   This line starts a new paragraph because of the blank line above.',
+            '',
+            '2. Text wrapped in angle brackets is a "label", e.g. `<fig1>` or `<code1>`.',
+            '   Labels name figures, code blocks, and other objects so you can refer to them.',
+            '',
+            '3. Use `@label` to reference a label. Typst numbers and links it automatically.',
+            '   For example, `@fig1` will render as "Figure 1" (or similar), and clicking it',
+            '   jumps to the referenced figure.',
+            '',
+            '4. A line starting with = is a level-1 heading, == is level-2, and so on.',
+            '   = 1. Objective',
+            '   == 1.1 Sub-heading',
+            '',
+            '5. Wrap inline code in backticks, e.g. `System.out.println`.',
+            '   Multi-line code uses triple backticks — see the "Code" section below.',
+            '',
+            '6. Math formulas are wrapped in $ ... $, e.g. $x^2 + y^2 = r^2$.',
+            '',
+            '// ---------- Sample body below — replace with your own content ----------',
+            '',
+            '= 1. Objective',
+            '',
+            'Briefly describe the goal of this experiment.',
+            '',
+            '= 2. Code',
+            '',
+            'The key code for this experiment is shown below:',
+            '',
+            '#figure(caption: "Main.java")[',
+            '```java',
+            'public class Main {',
+            '    public static void main(String[] args) {',
+            '        System.out.println("Hello, world");',
+            '    }',
+            '}',
+            '```',
+            '] <code1>',
+            '',
+            'As shown in @code1, the program prints text using `System.out.println`.',
+            '',
+            '= 3. Results',
+            '',
+            'The output after running the program is shown below (in practice, click "Insert Image" to insert a real screenshot):',
+            '',
+            '#figure(',
+            '  rect(width: 8cm, height: 5cm, stroke: 0.5pt)[Screenshot goes here],',
+            '  caption: "Program output",',
+            ') <fig1>',
+            '',
+            'From @fig1 we can see that the output matches expectations.',
+            '',
+            '= 4. Analysis and Conclusion',
+            '',
+            'This experiment helped me understand the basic structure of Java programs and how to compile and run them.',
+            '',
+            '// Tip: the rect(...) above is just a placeholder — delete it and use the "Insert Image" button to add a real screenshot.',
+        ].join('\n');
+    }
 }
+
+// =====================================================================
+// 构造器
+// =====================================================================
 
 function newLabId(existing: Experiment[]): string {
     let i = existing.length + 1;
@@ -273,8 +297,8 @@ function newExperiment(existing: Experiment[], lang: 'zh' | 'en'): Experiment {
         content: isZh ? '+ 实验内容 1\n+ 实验内容 2' : '+ Task 1\n+ Task 2',
         instrument: isZh ? '电脑' : 'Computer',
         recordGuide: isZh
-            ? ['说明实验报告里应包含什么（每行一条）']
-            : ['Describe what the lab report should contain (one per line)'],
+            ? ['说明记录里应包含什么（每行一条）']
+            : ['Describe what the record should contain (one per line)'],
         placeholder: isZh
             ? '在此撰写实验代码、运行结果与分析。'
             : 'Write your experiment code, run results, and analysis here.',
@@ -283,10 +307,10 @@ function newExperiment(existing: Experiment[], lang: 'zh' | 'en'): Experiment {
     };
 }
 
-function emptyConfig(): LabConfig {
+function emptyConfig(lang: 'zh' | 'en' = 'zh'): LabConfig {
     return {
         version: '1.0.0',
-        language: 'zh',
+        language: lang,
         storage: {
             dataFileNamePattern: 'report-{studentId}.json',
             draftFileName: 'report-draft.json',
@@ -298,13 +322,36 @@ function emptyConfig(): LabConfig {
             overwriteSilently: true,
             requireFileClosed: true,
         },
-        course: { courseName: '', teacherName: '', className: '', location: '' },
-        student: defaultStudent(),
+        course: {
+            courseName: '',
+            teacherName: '',
+            className: '',
+            location: '',
+        },
+        student: {
+            name: defaultStudentName(lang),
+            studentId: defaultStudentId(lang),
+            className: defaultClassName(lang),
+            location: defaultLocation(lang),
+        },
         typst: defaultTypst(),
         experiments: [],
-        codeLanguages: ['java', 'python', 'c', 'cpp', 'csharp', 'javascript', 'typescript', 'text'],
+        codeLanguages: [
+            'java',
+            'python',
+            'c',
+            'cpp',
+            'csharp',
+            'javascript',
+            'typescript',
+            'text',
+        ],
     };
 }
+
+// =====================================================================
+// Store
+// =====================================================================
 
 interface TeacherState {
     config: LabConfig;
@@ -363,7 +410,8 @@ export const useTeacherStore = create<TeacherState>((set, get) => {
         },
 
         newConfig: async () => {
-            set({ config: emptyConfig(), activeLabIndex: 0 });
+            const lang = get().config.language;
+            set({ config: emptyConfig(lang), activeLabIndex: 0 });
             try {
                 await invoke('clear_teacher_draft');
             } catch (e) {
@@ -372,9 +420,47 @@ export const useTeacherStore = create<TeacherState>((set, get) => {
             scheduleSave();
         },
 
-        updateCourse: (patch) => updateConfig({ course: { ...get().config.course, ...patch } }),
+        updateCourse: (patch) =>
+            updateConfig({ course: { ...get().config.course, ...patch } }),
 
-        setLanguage: (lang) => updateConfig({ language: lang }),
+        // 切换语言时：
+        // - 更新界面语言
+        // - 重置学生字段的标签与 placeholder
+        // - 重置所有实验的 example 为对应语言的默认示例
+        // - 保留 name / studentId / className / location 的其他配置（用户可能改过 pattern 等）
+        setLanguage: (lang) => {
+            const config = get().config;
+            const nameDefault = defaultStudentName(lang);
+            const idDefault = defaultStudentId(lang);
+            const classDefault = defaultClassName(lang);
+            const locDefault = defaultLocation(lang);
+
+            set({
+                config: {
+                    ...config,
+                    language: lang,
+                    student: {
+                        name: {
+                            ...nameDefault,
+                            minLength: config.student.name.minLength,
+                            maxLength: config.student.name.maxLength,
+                            requireCjk: config.student.name.requireCjk,
+                        },
+                        studentId: {
+                            ...idDefault,
+                            pattern: config.student.studentId.pattern,
+                        },
+                        className: classDefault,
+                        location: locDefault,
+                    },
+                    experiments: config.experiments.map((exp) => ({
+                        ...exp,
+                        example: defaultExample(lang),
+                    })),
+                },
+            });
+            scheduleSave();
+        },
 
         updateStudentName: (patch) =>
             updateConfig({
@@ -428,7 +514,10 @@ export const useTeacherStore = create<TeacherState>((set, get) => {
 
         removeExperiment: (idx) => {
             const experiments = get().config.experiments.filter((_, i) => i !== idx);
-            const activeLabIndex = Math.max(0, Math.min(get().activeLabIndex, experiments.length - 1));
+            const activeLabIndex = Math.max(
+                0,
+                Math.min(get().activeLabIndex, experiments.length - 1),
+            );
             set({ activeLabIndex });
             updateConfig({ experiments });
         },
