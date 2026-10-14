@@ -20,11 +20,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
-            target: x86_64-apple-darwin
-            typst_asset: typst-x86_64-apple-darwin.tar.xz
-            sidecar_name: typst-x86_64-apple-darwin
-
           - os: macos-latest
             target: aarch64-apple-darwin
             typst_asset: typst-aarch64-apple-darwin.tar.xz

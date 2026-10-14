@@ -106,6 +106,7 @@ export function TeacherWorkspace() {
     const removeExperiment = useTeacherStore((s) => s.removeExperiment);
     const reorderExperiments = useTeacherStore((s) => s.reorderExperiments);
     const setActiveLabIndex = useTeacherStore((s) => s.setActiveLabIndex);
+    const updateStudentId = useTeacherStore((s) => s.updateStudentId);
     const newConfig = useTeacherStore((s) => s.newConfig);
 
     const [exporting, setExporting] = useState(false);
@@ -330,15 +331,43 @@ export function TeacherWorkspace() {
                                     checked={config.student.name.requireCjk}
                                     onChange={(e) => updateStudentName({ requireCjk: e.currentTarget.checked })}
                                 />
+
+                                <TextInput
+                                    label="学号字段标签"
+                                    value={config.student.studentId.label}
+                                    onChange={(e) => updateStudentId({ label: e.currentTarget.value })}
+                                />
+                                <TextInput
+                                    label="学号输入提示"
+                                    value={config.student.studentId.placeholder}
+                                    onChange={(e) => updateStudentId({ placeholder: e.currentTarget.value })}
+                                />
+                                <TextInput
+                                    label="学号匹配规则（正则表达式）"
+                                    value={config.student.studentId.pattern}
+                                    onChange={(e) => updateStudentId({ pattern: e.currentTarget.value })}
+                                />
+
                                 <TextInput
                                     label="班级字段标签"
                                     value={config.student.className.label}
                                     onChange={(e) => updateClassName({ label: e.currentTarget.value })}
                                 />
                                 <TextInput
+                                    label="班级输入提示"
+                                    value={config.student.className.placeholder}
+                                    onChange={(e) => updateClassName({ placeholder: e.currentTarget.value })}
+                                />
+
+                                <TextInput
                                     label="实验地点字段标签"
                                     value={config.student.location.label}
                                     onChange={(e) => updateLocation({ label: e.currentTarget.value })}
+                                />
+                                <TextInput
+                                    label="实验地点输入提示"
+                                    value={config.student.location.placeholder}
+                                    onChange={(e) => updateLocation({ placeholder: e.currentTarget.value })}
                                 />
                             </Stack>
                         </Card>
