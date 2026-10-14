@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# tauri-action 需要 write 权限才能创建 release
+permissions:
+  contents: write
+
+# Typst 版本集中在这里管理，升级时只改这一处
+env:
+  TYPST_VERSION: v0.13.1
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13
+            target: x86_64-apple-darwin
+            typst_asset: typst-x86_64-apple-darwin.tar.xz
+            sidecar_name: typst-x86_64-apple-darwin
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            typst_asset: typst-aarch64-apple-darwin.tar.xz
+            sidecar_name: typst-aarch64-apple-darwin
+
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            typst_asset: typst-x86_64-unknown-linux-musl.tar.xz
+            sidecar_name: typst-x86_64-unknown-linux-gnu
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            typst_asset: typst-x86_64-pc-windows-msvc.zip
+            sidecar_name: typst-x86_64-pc-windows-msvc.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # ---- 下载 Typst sidecar：macOS / Linux ----
+      - name: Download Typst sidecar (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          ASSET: ${{ matrix.typst_asset }}
+          SIDECAR: ${{ matrix.sidecar_name }}
+        run: |
+          set -e
+          mkdir -p src-tauri/binaries
+          curl -fL -o /tmp/typst.pkg \
+            "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/${ASSET}"
+          mkdir -p /tmp/typst-extract
+          tar -xf /tmp/typst.pkg -C /tmp/typst-extract
+          BIN=$(find /tmp/typst-extract -type f -name typst | head -n 1)
+          mv "$BIN" "src-tauri/binaries/${SIDECAR}"
+          chmod +x "src-tauri/binaries/${SIDECAR}"
+          ls -la src-tauri/binaries/
+
+      # ---- 下载 Typst sidecar：Windows ----
+      - name: Download Typst sidecar (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ASSET: ${{ matrix.typst_asset }}
+          SIDECAR: ${{ matrix.sidecar_name }}
+        run: |
+          New-Item -ItemType Directory -Force -Path src-tauri/binaries | Out-Null
+          $url = "https://github.com/typst/typst/releases/download/$env:TYPST_VERSION/$env:ASSET"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\typst.zip"
+          Expand-Archive -Path "$env:TEMP\typst.zip" -DestinationPath "$env:TEMP\typst-extract" -Force
+          $bin = Get-ChildItem -Path "$env:TEMP\typst-extract" -Recurse -Filter typst.exe | Select-Object -First 1
+          Copy-Item $bin.FullName "src-tauri/binaries/$env:SIDECAR"
+          Get-ChildItem src-tauri/binaries
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build and publish Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Lab Report Filler ${{ github.ref_name }}'
+          releaseBody: |
+            Download the installer for your platform:
+            - Windows: `.msi` or `.exe`
+            - macOS (Apple Silicon): `aarch64.dmg`
+            - macOS (Intel): `x64.dmg`
+            - Linux: `.AppImage` or `.deb`
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}

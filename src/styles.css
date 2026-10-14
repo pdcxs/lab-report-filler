@@ -1,0 +1,16 @@
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+}
+
+.preview-page svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+[data-mantine-color-scheme='dark'] .preview-page {
+    background: #1a1a1a !important;
+}
