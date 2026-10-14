@@ -2,38 +2,41 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import type {
     AppSettings,
+    ExportResult,
     ImportedImage,
+    LabelInfo,
     LabConfig,
     LabSession,
     PreviewResult,
     StudentData,
     ValidationReport,
-    ExportResult,
 } from '../types/lab-config';
 
+export type Role = 'student' | 'teacher';
+
 interface LabState {
-    // ---- 全局 ----
     dir: string | null;
     config: LabConfig | null;
-    lang: 'en' | 'zh';
     student: StudentData;
     activeLabId: string | null;
+    role: Role | null;
 
-    // ---- 运行态 ----
     saving: boolean;
-    lastSaved: string | null;   // 显示 "Saved" 用
+    lastSaved: string | null;
     previewPages: string[];
     previewError: string | null;
     exporting: boolean;
     validating: boolean;
 
-    // ---- actions ----
     init: () => Promise<void>;
+    setRole: (r: Role) => Promise<void>;
+    clearRole: () => Promise<void>;
     openDir: (path: string) => Promise<void>;
-    setLang: (l: 'en' | 'zh') => void;
     setActiveLab: (id: string) => void;
     updateStudent: (patch: Partial<StudentData>) => void;
     updateRecord: (labId: string, content: string) => void;
+    registerLabel: (labId: string, info: LabelInfo) => void;
+    unregisterLabel: (labId: string, label: string) => void;
     saveNow: () => Promise<void>;
     importImage: (src: string) => Promise<ImportedImage>;
     refreshPreview: () => Promise<void>;
@@ -42,32 +45,46 @@ interface LabState {
     reset: () => void;
 }
 
-const emptyStudent: StudentData = { name: '', studentId: '', records: {} };
+const emptyStudent: StudentData = {
+    name: '',
+    studentId: '',
+    className: '',
+    location: '',
+    records: {},
+    labels: {},
+};
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let previewTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useLabStore = create<LabState>((set, get) => {
+    const persist = async () => {
+        const { dir, role } = get();
+        try {
+            await invoke('save_settings', {
+                settings: { lastLabDir: dir, lastRole: role },
+            });
+        } catch (e) {
+            console.warn('save settings failed', e);
+        }
+    };
+
     const scheduleSave = () => {
         if (saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-            void get().saveNow();
-        }, 800);
+        saveTimer = setTimeout(() => void get().saveNow(), 800);
     };
 
     const schedulePreview = () => {
         if (previewTimer) clearTimeout(previewTimer);
-        previewTimer = setTimeout(() => {
-            void get().refreshPreview();
-        }, 800);
+        previewTimer = setTimeout(() => void get().refreshPreview(), 800);
     };
 
     return {
         dir: null,
         config: null,
-        lang: 'en',
         student: emptyStudent,
         activeLabId: null,
+        role: null,
 
         saving: false,
         lastSaved: null,
@@ -76,18 +93,17 @@ export const useLabStore = create<LabState>((set, get) => {
         exporting: false,
         validating: false,
 
-        // ---- 启动：读 settings，若上次的目录还在，直接打开 ----
         init: async () => {
             try {
                 const settings = await invoke<AppSettings>('load_settings');
-                if (settings.lastLanguage === 'zh' || settings.lastLanguage === 'en') {
-                    set({ lang: settings.lastLanguage });
+                if (settings.lastRole === 'student' || settings.lastRole === 'teacher') {
+                    set({ role: settings.lastRole });
                 }
                 if (settings.lastLabDir) {
                     try {
                         await get().openDir(settings.lastLabDir);
                     } catch {
-                        // 目录已经不在了，忽略，让用户手动重新选
+                        // ignore
                     }
                 }
             } catch (e) {
@@ -95,48 +111,34 @@ export const useLabStore = create<LabState>((set, get) => {
             }
         },
 
-        openDir: async (path: string) => {
+        setRole: async (r) => {
+            set({ role: r });
+            await persist();
+        },
+
+        clearRole: async () => {
+            set({ role: null });
+            await persist();
+        },
+
+        openDir: async (path) => {
             const session = await invoke<LabSession>('open_lab_dir', { path });
             const data = await invoke<StudentData>('load_student_data', {
                 dir: session.dir,
                 config: session.config,
                 studentId: null,
             });
-            const lang =
-                get().lang ||
-                (session.config.ui.defaultLanguage as 'en' | 'zh') ||
-                'en';
 
             set({
                 dir: session.dir,
                 config: session.config,
                 student: data,
                 activeLabId: session.config.experiments[0]?.id ?? null,
-                lang,
                 previewPages: [],
                 previewError: null,
             });
 
-            // 记忆目录
-            try {
-                await invoke('save_settings', {
-                    settings: { lastLabDir: session.dir, lastLanguage: lang },
-                });
-            } catch (e) {
-                console.warn('save settings failed', e);
-            }
-
-            void get().refreshPreview();
-        },
-
-        setLang: (l) => {
-            set({ lang: l });
-            const dir = get().dir;
-            if (dir) {
-                void invoke('save_settings', {
-                    settings: { lastLabDir: dir, lastLanguage: l },
-                });
-            }
+            await persist();
             void get().refreshPreview();
         },
 
@@ -157,6 +159,33 @@ export const useLabStore = create<LabState>((set, get) => {
             }));
             scheduleSave();
             schedulePreview();
+        },
+
+        registerLabel: (labId, info) => {
+            set((s) => {
+                const list = s.student.labels[labId] ?? [];
+                const filtered = list.filter((l) => l.label !== info.label);
+                return {
+                    student: {
+                        ...s.student,
+                        labels: { ...s.student.labels, [labId]: [...filtered, info] },
+                    },
+                };
+            });
+            scheduleSave();
+        },
+
+        unregisterLabel: (labId, label) => {
+            set((s) => {
+                const list = (s.student.labels[labId] ?? []).filter((l) => l.label !== label);
+                return {
+                    student: {
+                        ...s.student,
+                        labels: { ...s.student.labels, [labId]: list },
+                    },
+                };
+            });
+            scheduleSave();
         },
 
         saveNow: async () => {
@@ -183,14 +212,13 @@ export const useLabStore = create<LabState>((set, get) => {
         },
 
         refreshPreview: async () => {
-            const { dir, config, student, lang } = get();
+            const { dir, config, student } = get();
             if (!dir || !config) return;
             try {
                 const result = await invoke<PreviewResult>('compile_preview', {
                     dir,
                     config,
                     data: student,
-                    lang,
                 });
                 set({ previewPages: result.pages, previewError: null });
             } catch (e) {
@@ -199,14 +227,13 @@ export const useLabStore = create<LabState>((set, get) => {
         },
 
         validate: async () => {
-            const { config, student, lang } = get();
+            const { config, student } = get();
             if (!config) return null;
             set({ validating: true });
             try {
                 const report = await invoke<ValidationReport>('validate_report', {
                     config,
                     data: student,
-                    lang,
                 });
                 set({ validating: false });
                 return report;
@@ -217,7 +244,7 @@ export const useLabStore = create<LabState>((set, get) => {
         },
 
         exportPdf: async () => {
-            const { dir, config, student, lang } = get();
+            const { dir, config, student } = get();
             if (!dir || !config) return null;
             set({ exporting: true });
             try {
@@ -225,7 +252,6 @@ export const useLabStore = create<LabState>((set, get) => {
                     dir,
                     config,
                     data: student,
-                    lang,
                 });
                 set({ exporting: false });
                 return result;

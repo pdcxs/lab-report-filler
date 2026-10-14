@@ -75,11 +75,7 @@ pub struct ValidationReport {
 }
 
 #[tauri::command]
-pub fn validate_report(
-    config: LabConfig,
-    data: StudentData,
-    _lang: String,
-) -> Result<ValidationReport, String> {
+pub fn validate_report(config: LabConfig, data: StudentData) -> Result<ValidationReport, String> {
     let mut global_errors = Vec::new();
 
     if data.name.trim().is_empty() {

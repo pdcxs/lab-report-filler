@@ -1,7 +1,9 @@
 import { Badge, Box, Button, Group, Text } from '@mantine/core';
+import { openPath } from '@tauri-apps/plugin-opener';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useLabStore } from '../state/useLabStore';
-import { pickLocalized, useT } from '../i18n/useT';
-import { LanguageToggle } from './LanguageToggle';
+import { useUiStore } from '../state/useUiStore';
+import { useT } from '../i18n/useT';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { StudentForm } from './StudentForm';
 import { LabNav } from './LabNav';
@@ -11,39 +13,44 @@ import { useOpenFolder } from '../hooks/useOpenFolder';
 
 export function Workspace() {
     const dir = useLabStore((s) => s.dir);
-    const config = useLabStore((s) => s.config);
-    const lang = useLabStore((s) => s.lang);
     const saving = useLabStore((s) => s.saving);
     const lastSaved = useLabStore((s) => s.lastSaved);
+    const clearRole = useLabStore((s) => s.clearRole);
+    const requestOpenZip = useUiStore((s) => s.requestOpenZip);
     const t = useT();
     const { pickAndOpen, busy } = useOpenFolder();
 
-    const appTitle = config ? pickLocalized(config.ui.appTitle, lang) : 'Lab Report Filler';
+    const handleOpenInFileManager = async () => {
+        if (!dir) return;
+        try {
+            await openPath(dir);
+        } catch (e) {
+            console.warn('open folder failed', e);
+        }
+    };
+
+    const handleOpenZip = async () => {
+        const zipPath = await open({
+            multiple: false,
+            filters: [{ name: 'Lab Package', extensions: ['zip'] }],
+            title: '选择实验包（ZIP） / Select lab package',
+        });
+        if (typeof zipPath !== 'string') return;
+        requestOpenZip(zipPath);
+    };
 
     return (
         <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh' }}>
-            <Box
-                p="xs"
-                px="md"
-                style={{
-                    borderBottom: '1px solid var(--mantine-color-gray-3)',
-                    flexShrink: 0,
-                }}
-            >
+            <Box p="xs" px="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}>
                 <Group justify="space-between">
                     <Group gap="sm">
-                        <Text fw={600}>{appTitle}</Text>
+                        <Text fw={600}>Lab Report Filler</Text>
                         {dir && (
                             <Text
                                 size="xs"
                                 c="dimmed"
                                 title={dir}
-                                style={{
-                                    maxWidth: 480,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
+                                style={{ maxWidth: 480, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                             >
                                 {dir}
                             </Text>
@@ -53,20 +60,23 @@ export function Workspace() {
                         {saving ? (
                             <Badge variant="light">{t('saving')}</Badge>
                         ) : lastSaved ? (
-                            <Badge color="green" variant="light">
-                                {t('saved')}
-                            </Badge>
+                            <Badge color="green" variant="light">{t('saved')}</Badge>
                         ) : null}
-                        <Button
-                            variant="light"
-                            size="xs"
-                            loading={busy}
-                            onClick={() => void pickAndOpen()}
-                        >
+                        {dir && (
+                            <Button variant="subtle" size="xs" onClick={() => void handleOpenInFileManager()}>
+                                {t('openInFileManager')}
+                            </Button>
+                        )}
+                        <Button variant="light" size="xs" onClick={() => void handleOpenZip()}>
+                            {t('openZip')}
+                        </Button>
+                        <Button variant="light" size="xs" loading={busy} onClick={() => void pickAndOpen()}>
                             {t('openFolder')}
                         </Button>
+                        <Button variant="subtle" size="xs" onClick={() => void clearRole()}>
+                            {t('backToRole')}
+                        </Button>
                         <ColorSchemeToggle />
-                        <LanguageToggle />
                     </Group>
                 </Group>
             </Box>
@@ -75,25 +85,13 @@ export function Workspace() {
                 <Box
                     w={300}
                     p="md"
-                    style={{
-                        borderRight: '1px solid var(--mantine-color-gray-3)',
-                        overflowY: 'auto',
-                        flexShrink: 0,
-                    }}
+                    style={{ borderRight: '1px solid var(--mantine-color-gray-3)', overflowY: 'auto', flexShrink: 0 }}
                 >
                     <StudentForm />
                     <LabNav />
                 </Box>
 
-                <Box
-                    style={{
-                        flex: 1,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        minWidth: 0,
-                    }}
-                >
+                <Box style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <LabView />
                 </Box>
             </Group>

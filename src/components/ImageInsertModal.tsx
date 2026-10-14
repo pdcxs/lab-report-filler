@@ -7,6 +7,7 @@ import { useT } from '../i18n/useT';
 
 interface Props {
     opened: boolean;
+    labId: string;
     onClose: () => void;
     onInsert: (snippet: string) => void;
 }
@@ -20,9 +21,10 @@ function slugify(s: string): string {
     return cleaned || 'fig';
 }
 
-export function ImageInsertModal({ opened, onClose, onInsert }: Props) {
+export function ImageInsertModal({ opened, labId, onClose, onInsert }: Props) {
     const t = useT();
     const importImage = useLabStore((s) => s.importImage);
+    const registerLabel = useLabStore((s) => s.registerLabel);
     const [srcPath, setSrcPath] = useState<string | null>(null);
     const [label, setLabel] = useState('');
     const [caption, setCaption] = useState('');
@@ -49,11 +51,7 @@ export function ImageInsertModal({ opened, onClose, onInsert }: Props) {
     const handleInsert = async () => {
         if (!srcPath) return;
         if (!label.trim()) {
-            notifications.show({
-                color: 'red',
-                title: 'Error',
-                message: 'Label is required.',
-            });
+            notifications.show({ color: 'red', title: 'Error', message: 'Label is required.' });
             return;
         }
         setBusy(true);
@@ -62,15 +60,12 @@ export function ImageInsertModal({ opened, onClose, onInsert }: Props) {
             const safeCaption = caption.replace(/"/g, '\\"');
             const snippet = `#figure(image("${imported.relativePath}", width: 80%), caption: "${safeCaption}") <${label}>`;
             onInsert(snippet);
+            registerLabel(labId, { label, kind: 'figure', title: caption || label });
             setSrcPath(null);
             setLabel('');
             setCaption('');
         } catch (e) {
-            notifications.show({
-                color: 'red',
-                title: 'Import failed',
-                message: String(e),
-            });
+            notifications.show({ color: 'red', title: 'Import failed', message: String(e) });
         } finally {
             setBusy(false);
         }

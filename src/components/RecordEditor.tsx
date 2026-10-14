@@ -2,14 +2,14 @@ import { useRef, useState } from 'react';
 import { Button, Group, Paper, Text, Textarea } from '@mantine/core';
 import type { Experiment } from '../types/lab-config';
 import { useLabStore } from '../state/useLabStore';
-import { pickLocalized, useT } from '../i18n/useT';
+import { useT } from '../i18n/useT';
 import { ExampleModal } from './ExampleModal';
 import { ImageInsertModal } from './ImageInsertModal';
 import { ReferencePicker } from './ReferencePicker';
+import { CodeInsertModal } from './CodeInsertModal';
 
 export function RecordEditor({ experiment }: { experiment: Experiment }) {
     const t = useT();
-    const lang = useLabStore((s) => s.lang);
     const student = useLabStore((s) => s.student);
     const updateRecord = useLabStore((s) => s.updateRecord);
 
@@ -17,6 +17,7 @@ export function RecordEditor({ experiment }: { experiment: Experiment }) {
     const [exampleOpen, setExampleOpen] = useState(false);
     const [imageOpen, setImageOpen] = useState(false);
     const [refOpen, setRefOpen] = useState(false);
+    const [codeOpen, setCodeOpen] = useState(false);
 
     const value = student.records[experiment.id] ?? '';
 
@@ -42,6 +43,9 @@ export function RecordEditor({ experiment }: { experiment: Experiment }) {
             <Group justify="space-between" mb="xs" wrap="nowrap">
                 <Text fw={600}>{t('record')}</Text>
                 <Group gap="xs" wrap="nowrap">
+                    <Button variant="light" size="xs" onClick={() => setCodeOpen(true)}>
+                        {t('insertCode')}
+                    </Button>
                     <Button variant="light" size="xs" onClick={() => setImageOpen(true)}>
                         {t('insertImage')}
                     </Button>
@@ -60,14 +64,13 @@ export function RecordEditor({ experiment }: { experiment: Experiment }) {
                 ref={textareaRef}
                 value={value}
                 onChange={(e) => updateRecord(experiment.id, e.currentTarget.value)}
-                placeholder={pickLocalized(experiment.placeholder, lang)}
+                placeholder={experiment.placeholder}
                 autosize
                 minRows={12}
                 maxRows={30}
                 styles={{
                     input: {
-                        fontFamily:
-                            'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                         fontSize: 13,
                         lineHeight: 1.5,
                     },
@@ -86,20 +89,32 @@ export function RecordEditor({ experiment }: { experiment: Experiment }) {
 
             <ImageInsertModal
                 opened={imageOpen}
+                labId={experiment.id}
                 onClose={() => setImageOpen(false)}
                 onInsert={(snippet) => {
-                    insertAtCursor(snippet);
+                    insertAtCursor('\n' + snippet + '\n');
                     setImageOpen(false);
                 }}
             />
 
             <ReferencePicker
                 opened={refOpen}
-                onClose={() => setRefOpen(false)}
+                labId={experiment.id}
                 content={value}
+                onClose={() => setRefOpen(false)}
                 onPick={(ref) => {
                     insertAtCursor(ref);
                     setRefOpen(false);
+                }}
+            />
+
+            <CodeInsertModal
+                opened={codeOpen}
+                labId={experiment.id}
+                onClose={() => setCodeOpen(false)}
+                onInsert={(snippet) => {
+                    insertAtCursor(snippet);
+                    setCodeOpen(false);
                 }}
             />
         </Paper>

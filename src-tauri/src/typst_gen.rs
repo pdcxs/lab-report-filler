@@ -1,70 +1,53 @@
-use crate::model::{Experiment, LabConfig, StudentData};
+use crate::model::{LabConfig, StudentData};
 
-/// 转义 Typst 字符串字面量里的特殊字符。
-/// 学生姓名一般不会带这些，但保险起见。
 fn escape_str(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-/// 替换行内的简单占位符（不包含块级占位符）。
-fn replace_simple(line: &str, config: &LabConfig, student: &StudentData, lang: &str) -> String {
+fn replace_simple(line: &str, config: &LabConfig, student: &StudentData) -> String {
+    let class_name = if student.class_name.trim().is_empty() {
+        config.course.class_name.as_str()
+    } else {
+        student.class_name.as_str()
+    };
+    let location = if student.location.trim().is_empty() {
+        config.course.location.as_str()
+    } else {
+        student.location.as_str()
+    };
+
     line.replace("{{studentName}}", &escape_str(&student.name))
         .replace("{{studentId}}", &escape_str(&student.student_id))
-        .replace(
-            "{{courseName}}",
-            &escape_str(config.course.course_name.get(lang)),
-        )
-        .replace(
-            "{{teacherName}}",
-            &escape_str(config.course.teacher_name.get(lang)),
-        )
-        .replace(
-            "{{className}}",
-            &escape_str(config.course.class_name.get(lang)),
-        )
-        .replace(
-            "{{location}}",
-            &escape_str(config.course.location.get(lang)),
-        )
+        .replace("{{courseName}}", &escape_str(&config.course.course_name))
+        .replace("{{teacherName}}", &escape_str(&config.course.teacher_name))
+        .replace("{{className}}", &escape_str(class_name))
+        .replace("{{location}}", &escape_str(location))
 }
 
-/// 渲染实验目的（Typst 有序列表 `+ ...`）。
-fn render_objectives(exp: &Experiment, lang: &str) -> String {
-    exp.objectives
-        .get(lang)
-        .iter()
-        .map(|item| format!("+ {}", item))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-/// 渲染实验内容。
-/// 内容项本身可能已经带 "1. "、"- " 等前缀，所以直接拼接，不额外加列表符号。
-fn render_content(exp: &Experiment, lang: &str) -> String {
-    exp.content.get(lang).join("\n")
-}
-
-/// 生成完整的 Typst 源文件。
-pub fn generate(config: &LabConfig, student: &StudentData, _lang: &str) -> String {
+pub fn generate(config: &LabConfig, student: &StudentData) -> String {
     let mut out = String::new();
 
-    // Preamble 里目前没有语言相关的内容，用英文兜底即可。
+    // 根据 lab.json 的 language 设置 Typst 文本语言，影响断行、标点挤压等规则
+    if config.language == "zh" {
+        out.push_str("#set text(lang: \"zh\")\n");
+    }
+
     for line in &config.typst.preamble {
-        out.push_str(&replace_simple(line, config, student, "en"));
+        out.push_str(&replace_simple(line, config, student));
         out.push('\n');
     }
 
-    // 实验名称、目的、内容一律用中文，符合课程要求；
-    // 学生的 recordBlock 原样保留，不做翻译。
     for exp in &config.experiments {
         for line in &config.typst.experiment_section {
-            let line = replace_simple(line, config, student, "en");
-            let line = line.replace("{{experimentName}}", &escape_str(&exp.name.zh));
+            let line = replace_simple(line, config, student);
+            let line = line
+                .replace("{{experimentName}}", &escape_str(&exp.name))
+                .replace("{{instrument}}", &exp.instrument);
 
             if line.contains("{{objectivesBlock}}") {
-                out.push_str(&render_objectives(exp, "zh"));
+                out.push_str(&exp.objectives);
             } else if line.contains("{{contentBlock}}") {
-                out.push_str(&render_content(exp, "zh"));
+                out.push_str(&exp.content);
             } else if line.contains("{{recordBlock}}") {
                 let record = student
                     .records

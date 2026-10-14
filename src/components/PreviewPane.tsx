@@ -1,11 +1,4 @@
-import {
-    Alert,
-    Box,
-    Button,
-    Group,
-    ScrollArea,
-    Text,
-} from '@mantine/core';
+import { Alert, Box, Button, Group, ScrollArea, Text } from '@mantine/core';
 import { useLabStore } from '../state/useLabStore';
 import { useT } from '../i18n/useT';
 
@@ -22,7 +15,7 @@ export function PreviewPane() {
                 minWidth: 280,
                 maxWidth: 640,
                 flexShrink: 0,
-                borderRight: '1px solid var(--mantine-color-gray-3)',
+                borderLeft: '1px solid var(--mantine-color-gray-3)',
                 display: 'flex',
                 flexDirection: 'column',
                 background: 'var(--mantine-color-gray-1)',
@@ -40,39 +33,25 @@ export function PreviewPane() {
             >
                 <Text fw={600}>{t('preview')}</Text>
                 <Button size="xs" variant="light" onClick={() => void refresh()}>
-                    Refresh
+                    {t('refresh')}
                 </Button>
             </Group>
 
             <ScrollArea style={{ flex: 1 }} p="md">
                 {error && (
-                    <Alert color="red" mb="md" title="Typst compile error">
-                        <Text
-                            size="xs"
-                            style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
-                        >
+                    <Alert color="red" mb="md" title={t('error')}>
+                        <Text size="xs" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                             {error}
                         </Text>
                     </Alert>
                 )}
-                {pages.length === 0 && !error && <Text c="dimmed">No preview yet.</Text>}
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 16,
-                    }}
-                >
+                {pages.length === 0 && !error && <Text c="dimmed">{t('noPreview')}</Text>}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
                     {pages.map((svg, i) => (
                         <Box
                             key={i}
                             className="preview-page"
-                            style={{
-                                background: 'white',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                                width: '100%',
-                            }}
+                            style={{ background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.12)', width: '100%' }}
                             dangerouslySetInnerHTML={{ __html: svg }}
                         />
                     ))}

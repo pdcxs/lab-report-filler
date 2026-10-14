@@ -3,5 +3,7 @@ pub mod export;
 pub mod image;
 pub mod settings;
 pub mod storage;
+pub mod teacher;
 pub mod typst;
 pub mod validate;
+pub mod zip;

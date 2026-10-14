@@ -35,9 +35,8 @@ pub fn generate_typst(
     dir: String,
     config: LabConfig,
     data: StudentData,
-    lang: String,
 ) -> Result<GeneratedTypst, String> {
-    let source = typst_gen::generate(&config, &data, &lang);
+    let source = typst_gen::generate(&config, &data);
     let file_name = config
         .storage
         .generated_typst_name_pattern
@@ -57,10 +56,9 @@ pub async fn compile_preview(
     dir: String,
     config: LabConfig,
     data: StudentData,
-    lang: String,
 ) -> Result<PreviewResult, String> {
     // 1. 生成 typ
-    let generated = generate_typst(dir.clone(), config, data, lang)?;
+    let generated = generate_typst(dir.clone(), config, data)?;
     let typ_path = PathBuf::from(&generated.typst_path);
 
     // 2. 准备临时输出目录

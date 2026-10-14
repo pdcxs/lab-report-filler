@@ -1,10 +1,9 @@
 import { NavLink, Stack, Title } from '@mantine/core';
 import { useLabStore } from '../state/useLabStore';
-import { pickLocalized, useT } from '../i18n/useT';
+import { useT } from '../i18n/useT';
 
 export function LabNav() {
     const config = useLabStore((s) => s.config);
-    const lang = useLabStore((s) => s.lang);
     const activeId = useLabStore((s) => s.activeLabId);
     const setActive = useLabStore((s) => s.setActiveLab);
     const t = useT();
@@ -19,7 +18,7 @@ export function LabNav() {
                     key={exp.id}
                     active={exp.id === activeId}
                     onClick={() => setActive(exp.id)}
-                    label={`${idx + 1}. ${pickLocalized(exp.name, lang)}`}
+                    label={`${idx + 1}. ${exp.name}`}
                 />
             ))}
         </Stack>

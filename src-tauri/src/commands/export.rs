@@ -32,10 +32,9 @@ pub async fn export_pdf(
     dir: String,
     config: LabConfig,
     data: StudentData,
-    lang: String,
 ) -> Result<ExportResult, String> {
     // 1. 生成 typ
-    let generated = generate_typst(dir.clone(), config.clone(), data.clone(), lang)?;
+    let generated = generate_typst(dir.clone(), config.clone(), data.clone())?;
     let typ_path = PathBuf::from(&generated.typst_path);
 
     // 2. 目标 PDF 路径

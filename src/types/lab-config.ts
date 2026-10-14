@@ -1,20 +1,3 @@
-export interface LocalizedString {
-    en: string;
-    zh: string;
-}
-
-export interface LocalizedStringList {
-    en: string[];
-    zh: string[];
-}
-
-export interface UiConfig {
-    defaultLanguage: string;
-    availableLanguages: string[];
-    appTitle: LocalizedString;
-    strings: Record<string, LocalizedString>;
-}
-
 export interface StorageConfig {
     dataFileNamePattern: string;
     draftFileName: string;
@@ -29,30 +12,37 @@ export interface ExportConfig {
 }
 
 export interface CourseConfig {
-    courseName: LocalizedString;
-    teacherName: LocalizedString;
-    className: LocalizedString;
-    location: LocalizedString;
+    courseName: string;
+    teacherName: string;
+    className: string;
+    location: string;
+}
+
+export interface SimpleFieldConfig {
+    label: string;
+    placeholder: string;
 }
 
 export interface StudentNameConfig {
-    label: LocalizedString;
-    placeholder: LocalizedString;
-    hint: LocalizedString;
+    label: string;
+    placeholder: string;
+    hint: string;
     minLength: number;
     maxLength: number;
-    requireCJK: boolean;
+    requireCjk: boolean;
 }
 
 export interface StudentIdConfig {
-    label: LocalizedString;
-    placeholder: LocalizedString;
+    label: string;
+    placeholder: string;
     pattern: string;
 }
 
 export interface StudentConfig {
     name: StudentNameConfig;
     studentId: StudentIdConfig;
+    className: SimpleFieldConfig;
+    location: SimpleFieldConfig;
 }
 
 export interface TypstConfig {
@@ -69,30 +59,41 @@ export interface ValidationRules {
 
 export interface Experiment {
     id: string;
-    name: LocalizedString;
-    objectives: LocalizedStringList;
-    content: LocalizedStringList;
-    recordGuide: LocalizedStringList;
-    placeholder: LocalizedString;
+    name: string;
+    objectives: string;
+    content: string;
+    instrument: string;
+    recordGuide: string[];
+    placeholder: string;
     example: string;
     validation: ValidationRules;
 }
 
 export interface LabConfig {
     version: string;
-    ui: UiConfig;
+    language: 'zh' | 'en';
     storage: StorageConfig;
     export: ExportConfig;
     course: CourseConfig;
     student: StudentConfig;
     typst: TypstConfig;
     experiments: Experiment[];
+    codeLanguages: string[];
+}
+
+export interface LabelInfo {
+    label: string;
+    kind: 'figure' | 'code';
+    title: string;
 }
 
 export interface StudentData {
     name: string;
     studentId: string;
+    className: string;
+    location: string;
     records: Record<string, string>;
+    labels: Record<string, LabelInfo[]>;
 }
 
 export interface LabSession {
@@ -102,7 +103,7 @@ export interface LabSession {
 
 export interface AppSettings {
     lastLabDir: string | null;
-    lastLanguage: string | null;
+    lastRole: 'student' | 'teacher' | null;
 }
 
 export interface ImportedImage {
