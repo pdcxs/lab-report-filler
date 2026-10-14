@@ -96,7 +96,7 @@ Use the toolbar buttons above the editor:
 - **Insert Code** — pick a language, paste your code, give it a caption and a label. The app inserts a `#figure` block with your code.
 - **Insert Image** — pick a screenshot, set a label and caption. The app copies the image into the project and inserts a labeled figure.
 - **Insert Reference** — lists all labeled figures and code blocks in the current record. Click one to insert `@label` into your text. Use this to refer to your figures in prose.
-- **Show Example** — only for Experiment 1. Shows a fully worked example. You can copy it and adapt it.
+- **Show Example** — if your instructor provided a sample for this experiment, click to view it. You can copy it into the editor and adapt it. Not all experiments have samples.
 
 Each record must contain (per the validation rules):
 
@@ -144,10 +144,10 @@ Launch the app, click **I am a Teacher** on the welcome screen.
 
 Enter:
 
-- **Course Name** — e.g. `Java语言程序设计`.
-- **Teacher** — e.g. `陈笑沙`.
-- **Default Class** — e.g. `计算机LY2501`. Students can override this.
-- **Default Location** — e.g. `E206`. Students can override this.
+- **Course Name** — the course title, shown on the cover page.
+- **Teacher** — the instructor's name, shown on the cover page.
+- **Default Class** — the class name shown on the cover. Students can override it.
+- **Default Location** — the lab room shown on the cover. Students can override it.
 - **Language** — `zh` or `en`. Controls the UI language students see.
 - **Code Languages** — one language per line. Students will see these in the **Insert Code** dropdown.
 
@@ -163,10 +163,10 @@ Set the labels and placeholders students will see for their name, student ID, cl
 
 Click **+ Add Experiment** to add experiments. For each experiment:
 
-- **Name** — e.g. `Java语言初探`.
+- **Name** — the experiment title, shown on the cover and at the top of the experiment page.
 - **Objectives & Requirements** — Typst source. Write `+ 内容` to create a numbered list item, or write plain paragraphs.
 - **Experiment Content** — Typst source. Same rules.
-- **Instrument** — e.g. `电脑`.
+- **Instrument** — equipment used, e.g. a computer, a multimeter, etc.
 - **Record Guide** — one line per item. These appear to students as bullet-point hints.
 - **Editor Placeholder** — text shown in the empty editor box.
 - **Example** — content shown when the student clicks **Show Example**. Can be empty.
