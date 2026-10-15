@@ -3,14 +3,12 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
-# tauri-action 需要 write 权限才能创建 release
 permissions:
   contents: write
 
-# Typst 版本集中在这里管理，升级时只改这一处
 env:
   TYPST_VERSION: v0.13.1
 
@@ -27,8 +25,7 @@ jobs:
 
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            typst_asset: typst-x86_64-unknown-linux-musl.tar.xz
-            sidecar_name: typst-x86_64-unknown-linux-gnu
+            # Linux 不使用 sidecar，typst 由用户自行安装
 
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -65,9 +62,9 @@ jobs:
         with:
           workspaces: src-tauri -> target
 
-      # ---- 下载 Typst sidecar：macOS / Linux ----
-      - name: Download Typst sidecar (Unix)
-        if: runner.os != 'Windows'
+      # ---- 下载 Typst sidecar：仅 macOS（非 Windows、非 Linux） ----
+      - name: Download Typst sidecar (macOS)
+        if: runner.os == 'macOS'
         shell: bash
         env:
           ASSET: ${{ matrix.typst_asset }}
@@ -109,13 +106,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Lab Report Filler ${{ github.ref_name }}'
+          releaseName: "Lab Report Filler ${{ github.ref_name }}"
           releaseBody: |
             Download the installer for your platform:
-            - Windows: `.msi` or `.exe`
-            - macOS (Apple Silicon): `aarch64.dmg`
-            - macOS (Intel): `x64.dmg`
-            - Linux: `.AppImage` or `.deb`
+
+            - **Windows**: `.msi` or `.exe` — no extra setup needed.
+            - **macOS (Apple Silicon)**: `aarch64.dmg` — no extra setup needed.
+            - **Linux**: `.deb` or `.AppImage` — **Typst must be installed separately**:
+              - Arch Linux: `sudo pacman -S typst`
+              - Ubuntu / Debian: `sudo apt install typst` (or `cargo install typst-cli`)
+              - Fedora: `sudo dnf install typst`
+              - Any system with Rust: `cargo install typst-cli`
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }}

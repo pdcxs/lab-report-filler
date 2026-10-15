@@ -28,9 +28,28 @@ The app is built with **Tauri 2 + React + TypeScript + Mantine**, and bundles th
 
 ## System Requirements
 
-- **Windows**: Windows 10 or later.
-- **macOS**: macOS 11 or later (Apple Silicon and Intel builds available).
-- **Linux**: mainstream distributions (AppImage and deb).
+- **Windows**: Windows 10 or later. No extra setup needed.
+- **macOS**: macOS 11 or later (Apple Silicon and Intel builds available). No extra setup needed.
+- **Linux**: mainstream distributions. **Typst must be installed separately** — see below.
+
+### Installing Typst on Linux
+
+This app requires the [Typst](https://typst.app/) compiler to generate PDFs. Windows and macOS builds bundle Typst; **Linux builds do not**. Install it first:
+
+| Distribution | Command |
+|---|---|
+| Arch Linux | `sudo pacman -S typst` |
+| Ubuntu / Debian | `sudo apt install typst` |
+| Fedora | `sudo dnf install typst` |
+| openSUSE | `sudo zypper install typst` |
+| Any system with Rust | `cargo install typst-cli` |
+
+
+If your distribution's repository does not provide a `typst` package, use `cargo install typst-cli` (requires Rust to be installed). After installation, verify with:
+
+```bash
+typst --version
+
 
 ## Installation
 

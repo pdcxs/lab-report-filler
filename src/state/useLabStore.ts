@@ -27,6 +27,8 @@ interface LabState {
     previewError: string | null;
     exporting: boolean;
     validating: boolean;
+    typstAvailable: boolean | null;   // null = 尚未检测
+    typstMessage: string | null;
 
     init: () => Promise<void>;
     setRole: (r: Role) => Promise<void>;
@@ -43,6 +45,7 @@ interface LabState {
     validate: () => Promise<ValidationReport | null>;
     exportPdf: () => Promise<ExportResult | null>;
     reset: () => void;
+    checkTypst: () => Promise<void>;
 }
 
 const emptyStudent: StudentData = {
@@ -92,6 +95,8 @@ export const useLabStore = create<LabState>((set, get) => {
         previewError: null,
         exporting: false,
         validating: false,
+        typstAvailable: null,
+        typstMessage: null,
 
         init: async () => {
             try {
@@ -272,5 +277,21 @@ export const useLabStore = create<LabState>((set, get) => {
                 lastSaved: null,
             });
         },
+
+        checkTypst: async () => {
+            try {
+              const result = await invoke<{
+                available: boolean;
+                version: string | null;
+                message: string | null;
+              }>('check_typst');
+              set({
+                typstAvailable: result.available,
+                typstMessage: result.message,
+              });
+            } catch (e) {
+              set({ typstAvailable: false, typstMessage: String(e) });
+            }
+          },
     };
 });

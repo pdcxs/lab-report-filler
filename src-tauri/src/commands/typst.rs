@@ -2,8 +2,8 @@ use crate::model::{LabConfig, StudentData};
 use crate::typst_gen;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
 use tauri::{AppHandle, Manager};
+#[cfg(not(target_os = "linux"))]
 use tauri_plugin_shell::ShellExt;
 
 #[derive(Debug, serde::Serialize)]
@@ -16,12 +16,145 @@ pub struct GeneratedTypst {
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewResult {
-    /// 每一页的 SVG 字符串（按页码顺序）。
     pub pages: Vec<String>,
 }
 
+// =====================================================================
+// 统一的 Typst 调用接口
+// =====================================================================
+
+pub struct TypstOutput {
+    pub success: bool,
+    pub code: Option<i32>,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypstCheck {
+    pub available: bool,
+    pub version: Option<String>,
+    pub message: Option<String>,
+}
+
+/// 检测系统里是否有可用的 typst。
+/// - Windows / macOS：检测内置 sidecar 是否能跑。
+/// - Linux：检测系统 PATH 里的 `typst`。
+#[tauri::command]
+pub async fn check_typst(app: AppHandle) -> Result<TypstCheck, String> {
+    let output = run_typst(&app, vec!["--version".to_string()]).await;
+
+    match output {
+        Ok(o) if o.success => {
+            let stdout = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            Ok(TypstCheck {
+                available: true,
+                version: Some(stdout),
+                message: None,
+            })
+        }
+        Ok(o) => {
+            let stderr = String::from_utf8_lossy(&o.stderr).trim().to_string();
+            Ok(TypstCheck {
+                available: false,
+                version: None,
+                message: Some(if stderr.is_empty() {
+                    format!("typst exited with code {:?}", o.code)
+                } else {
+                    stderr
+                }),
+            })
+        }
+        Err(e) => Ok(TypstCheck {
+            available: false,
+            version: None,
+            message: Some(e),
+        }),
+    }
+}
+
+/// Windows / macOS：调用 Tauri 打包的 sidecar。
+/// Linux：调用系统 PATH 里的 typst（用户自行安装）。
+#[cfg_attr(target_os = "linux", allow(unused_variables))]
+pub async fn run_typst(app: &AppHandle, args: Vec<String>) -> Result<TypstOutput, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let args_owned = args.clone();
+        let output = tauri::async_runtime::spawn_blocking(move || {
+            std::process::Command::new("typst")
+                .args(&args_owned)
+                .output()
+        })
+        .await
+        .map_err(|e| format!("Task join error: {e}"))?
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                "Typst is not installed on this system. Please install it first.\n\
+                 - Arch Linux: sudo pacman -S typst\n\
+                 - Ubuntu / Debian: sudo apt install typst (or: cargo install typst-cli)\n\
+                 - Any system with Rust: cargo install typst-cli"
+                    .to_string()
+            } else {
+                format!("Failed to run typst: {e}")
+            }
+        })?;
+
+        return Ok(TypstOutput {
+            success: output.status.success(),
+            code: output.status.code(),
+            stdout: output.stdout,
+            stderr: output.stderr,
+        });
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let sidecar = app
+            .shell()
+            .sidecar("typst")
+            .map_err(|e| format!("sidecar not found: {e}"))?;
+        let output = sidecar
+            .args(args)
+            .output()
+            .await
+            .map_err(|e| format!("Failed to spawn typst sidecar: {e}"))?;
+
+        return Ok(TypstOutput {
+            success: output.status.success(),
+            code: output.status.code(),
+            stdout: output.stdout,
+            stderr: output.stderr,
+        });
+    }
+}
+
+/// 统一的错误格式化。给 export.rs 和 teacher.rs 共用。
+pub fn format_typst_error(output: &TypstOutput) -> String {
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let code_str = match output.code {
+        Some(c) => format!("exit code {c}"),
+        None => "killed by signal".to_string(),
+    };
+    let mut parts = vec![format!("Typst compile failed ({code_str}).")];
+    if !stdout.trim().is_empty() {
+        parts.push(format!("--- stdout ---\n{stdout}"));
+    }
+    if !stderr.trim().is_empty() {
+        parts.push(format!("--- stderr ---\n{stderr}"));
+    }
+    if stdout.trim().is_empty() && stderr.trim().is_empty() {
+        parts.push("No output from the typst process.".to_string());
+    }
+    parts.join("\n")
+}
+
+// =====================================================================
+// 路径
+// =====================================================================
+
 fn fonts_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    // dev 与 prod 下 resource dir 都指向包含 fonts/ 的目录。
     let dir = app
         .path()
         .resource_dir()
@@ -29,7 +162,10 @@ fn fonts_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("fonts"))
 }
 
-/// 生成 Typst 源码并写入 report-{studentId}.typ，返回路径与源码。
+// =====================================================================
+// Commands
+// =====================================================================
+
 #[tauri::command]
 pub fn generate_typst(
     dir: String,
@@ -37,10 +173,14 @@ pub fn generate_typst(
     data: StudentData,
 ) -> Result<GeneratedTypst, String> {
     let source = typst_gen::generate(&config, &data);
-    let file_name = config
-        .storage
-        .generated_typst_name_pattern
-        .replace("{studentId}", &data.student_id);
+    let file_name = if data.student_id.trim().is_empty() {
+        "report-draft.typ".to_string()
+    } else {
+        config
+            .storage
+            .generated_typst_name_pattern
+            .replace("{studentId}", &data.student_id)
+    };
     let path = Path::new(&dir).join(&file_name);
     fs::write(&path, &source).map_err(|e| e.to_string())?;
     Ok(GeneratedTypst {
@@ -49,7 +189,6 @@ pub fn generate_typst(
     })
 }
 
-/// 编译为 SVG 用于预览。
 #[tauri::command]
 pub async fn compile_preview(
     app: AppHandle,
@@ -57,11 +196,9 @@ pub async fn compile_preview(
     config: LabConfig,
     data: StudentData,
 ) -> Result<PreviewResult, String> {
-    // 1. 生成 typ
     let generated = generate_typst(dir.clone(), config, data)?;
     let typ_path = PathBuf::from(&generated.typst_path);
 
-    // 2. 准备临时输出目录
     let preview_dir = std::env::temp_dir().join("lab-report-preview");
     if preview_dir.exists() {
         fs::remove_dir_all(&preview_dir).ok();
@@ -69,34 +206,24 @@ pub async fn compile_preview(
     fs::create_dir_all(&preview_dir).map_err(|e| e.to_string())?;
     let out_pattern = preview_dir.join("page-{p}.svg");
 
-    // 3. 调 sidecar
     let fonts = fonts_dir(&app)?;
-    let sidecar = app
-        .shell()
-        .sidecar("typst")
-        .map_err(|e| format!("sidecar not found: {e}"))?;
-    let output = sidecar
-        .args([
-            "compile",
-            "--font-path",
-            fonts.to_str().ok_or("Invalid font path")?,
-            "--format",
-            "svg",
-            "--root",
-            &dir,
-            typ_path.to_str().ok_or("Invalid typ path")?,
-            out_pattern.to_str().ok_or("Invalid out path")?,
-        ])
-        .output()
-        .await
-        .map_err(|e| e.to_string())?;
+    let args = vec![
+        "compile".to_string(),
+        "--font-path".to_string(),
+        fonts.to_str().ok_or("Invalid font path")?.to_string(),
+        "--format".to_string(),
+        "svg".to_string(),
+        "--root".to_string(),
+        dir.clone(),
+        typ_path.to_str().ok_or("Invalid typ path")?.to_string(),
+        out_pattern.to_str().ok_or("Invalid out path")?.to_string(),
+    ];
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        return Err(format!("Typst compile failed:\n{stderr}"));
+    let output = run_typst(&app, args).await?;
+    if !output.success {
+        return Err(format_typst_error(&output));
     }
 
-    // 4. 收集页面
     let mut pages: Vec<(u32, String)> = Vec::new();
     for entry in fs::read_dir(&preview_dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
@@ -115,10 +242,4 @@ pub async fn compile_preview(
     Ok(PreviewResult {
         pages: pages.into_iter().map(|(_, svg)| svg).collect(),
     })
-}
-
-// 避免未使用告警；将来加"只预览当前实验"时用得上。
-#[allow(dead_code)]
-fn _unused() {
-    let _ = OnceLock::<()>::new();
 }

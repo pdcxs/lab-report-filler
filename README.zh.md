@@ -28,9 +28,29 @@ Lab Report Filler 解决编程课中一个常见的问题：学生不熟悉 LaTe
 
 ## 系统要求
 
-- **Windows**：Windows 10 或更高版本。
-- **macOS**：macOS 11 或更高版本（提供 Apple Silicon 和 Intel 两个版本）。
-- **Linux**：主流发行版（AppImage 和 deb）。
+- **Windows**：Windows 10 或更高版本。无需额外配置。
+- **macOS**：macOS 11 或更高版本（提供 Apple Silicon 和 Intel 两个版本）。无需额外配置。
+- **Linux**：主流发行版。**需要自行安装 Typst** —— 见下文。
+
+### 在 Linux 上安装 Typst
+
+本程序使用 [Typst](https://typst.app/) 编译器生成 PDF。Windows 和 macOS 版本内置了 Typst；**Linux 版本没有内置**，需要单独安装：
+
+
+| 发行版 | 安装命令 |
+|---|---|
+| Arch Linux | `sudo pacman -S typst` |
+| Ubuntu / Debian | `sudo apt install typst` |
+| Fedora | `sudo dnf install typst` |
+| openSUSE | `sudo zypper install typst` |
+| 任何装了 Rust 的系统 | `cargo install typst-cli` |
+
+
+如果发行版仓库里没有 `typst` 包，可以用 `cargo install typst-cli`（需要先装好 Rust）。安装完成后验证：
+
+```bash
+typst --version
+```
 
 ## 安装
 

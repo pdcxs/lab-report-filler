@@ -10,6 +10,7 @@ import { LabNav } from './LabNav';
 import { LabView } from './LabView';
 import { ExportBar } from './ExportBar';
 import { useOpenFolder } from '../hooks/useOpenFolder';
+import { useEffect } from 'react';
 
 export function Workspace() {
     const dir = useLabStore((s) => s.dir);
@@ -19,6 +20,7 @@ export function Workspace() {
     const requestOpenZip = useUiStore((s) => s.requestOpenZip);
     const t = useT();
     const { pickAndOpen, busy } = useOpenFolder();
+    const checkTypst = useLabStore((s) => s.checkTypst);
 
     const handleOpenInFileManager = async () => {
         if (!dir) return;
@@ -38,6 +40,10 @@ export function Workspace() {
         if (typeof zipPath !== 'string') return;
         requestOpenZip(zipPath);
     };
+
+    useEffect(() => {
+      void checkTypst();
+    }, [checkTypst]);
 
     return (
         <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh' }}>

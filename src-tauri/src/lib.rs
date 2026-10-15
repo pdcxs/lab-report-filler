@@ -24,6 +24,7 @@ pub fn run() {
             image::import_image,
             typst::generate_typst,
             typst::compile_preview,
+            typst::check_typst,
             validate::validate_report,
             export::export_pdf,
             zip::extract_zip,

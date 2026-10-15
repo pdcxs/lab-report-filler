@@ -1,10 +1,10 @@
+use crate::commands::typst::{format_typst_error, run_typst};
 use crate::model::LabConfig;
 use crate::model::StudentData;
 use crate::typst_gen;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
-use tauri_plugin_shell::ShellExt;
 
 const DEFAULT_UTILS_TYP: &str = include_str!("../../resources/utils.typ");
 
@@ -154,29 +154,22 @@ pub async fn preview_teacher_config(
     let out_pattern = out_dir.join("page-{p}.svg");
 
     let fonts = fonts_dir(&app)?;
-    let sidecar = app
-        .shell()
-        .sidecar("typst")
-        .map_err(|e| format!("sidecar not found: {e}"))?;
-    let output = sidecar
-        .args([
-            "compile",
-            "--font-path",
-            fonts.to_str().ok_or("Invalid font path")?,
-            "--format",
-            "svg",
-            "--root",
-            tmp.to_str().ok_or("Invalid root")?,
-            typ_path.to_str().ok_or("Invalid typ path")?,
-            out_pattern.to_str().ok_or("Invalid out path")?,
-        ])
-        .output()
-        .await
-        .map_err(|e| e.to_string())?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        return Err(format!("Typst compile failed:\n{stderr}"));
+    let args = vec![
+        "compile".to_string(),
+        "--font-path".to_string(),
+        fonts.to_str().ok_or("Invalid font path")?.to_string(),
+        "--format".to_string(),
+        "svg".to_string(),
+        "--root".to_string(),
+        tmp.to_str().ok_or("Invalid root")?.to_string(),
+        typ_path.to_str().ok_or("Invalid typ path")?.to_string(),
+        out_pattern.to_str().ok_or("Invalid out path")?.to_string(),
+    ];
+
+    let output = run_typst(&app, args).await?;
+    if !output.success {
+        return Err(format_typst_error(&output));
     }
 
     // 7. 收集页面
