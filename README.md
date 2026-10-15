@@ -49,7 +49,7 @@ If your distribution's repository does not provide a `typst` package, use `cargo
 
 ```bash
 typst --version
-
+```
 
 ## Installation
 
