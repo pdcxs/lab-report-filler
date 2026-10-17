@@ -8,7 +8,6 @@ import { checkTitle } from '../../utils/block-utils';
 export function CodeBlock({ labId, block }: { labId: string; block: Extract<Block, { type: 'code' }> }) {
     const t = useT();
     const updateBlock = useLabStore((s) => s.updateBlock);
-    const config = useLabStore((s) => s.config);
     const blocks = useLabStore((s) => s.student.records[labId] ?? EMPTY_BLOCKS);
 
     const languages = useLabStore((s) => s.config?.codeLanguages ?? DEFAULT_CODE_LANGUAGES);
