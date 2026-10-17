@@ -56,6 +56,7 @@ function defaultTypst(): TypstConfig {
             '#counter(page).update(1)',
             '#counter(figure).update(0)',
             '#counter(figure.where(kind: raw)).update(0)',
+            '#counter(figure.where(kind: image)).update(0)',
             '#counter(math.equation).update(0)',
             '#counter(footnote).update(0)',
             '',
