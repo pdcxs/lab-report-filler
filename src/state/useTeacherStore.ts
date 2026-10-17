@@ -52,6 +52,7 @@ function defaultTypst(): TypstConfig {
             '#set page(numbering: "1")',
             '#set text(font: ("Times New Roman", "KaiTi"), size: zh(4))',
             '#set par(first-line-indent: (amount: 2em, all: true), justify: true)',
+            "#show figure.where(kind: raw): set block(breakable: true)",
             '#counter(page).update(1)',
             '#counter(figure).update(0)',
             '#counter(figure.where(kind: raw)).update(0)',
