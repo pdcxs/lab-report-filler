@@ -100,9 +100,15 @@ pub struct Experiment {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidationRules {
-    pub require_code_block: bool,
-    pub require_figure: bool,
-    pub require_figure_reference: bool,
+    #[serde(default)]
+    pub require_all_referenced: bool,
+    #[serde(default)]
+    pub min_code_blocks: usize,
+    #[serde(default)]
+    pub min_figures: usize,
+    #[serde(default)]
+    pub min_text_blocks: usize,
+    #[serde(default)]
     pub min_prose_chars: usize,
 }
 

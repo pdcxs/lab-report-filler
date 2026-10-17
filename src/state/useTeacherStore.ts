@@ -79,9 +79,10 @@ function defaultTypst(): TypstConfig {
 
 function defaultValidation(): ValidationRules {
     return {
-        requireCodeBlock: true,
-        requireFigure: true,
-        requireFigureReference: true,
+        requireAllReferenced: true,
+        minCodeBlocks: 1,
+        minFigures: 1,
+        minTextBlocks: 1,
         minProseChars: 50,
     };
 }

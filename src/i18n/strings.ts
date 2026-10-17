@@ -70,6 +70,9 @@ interface AppStrings {
     titleDuplicate: string;
     unreferencedWarning: string;
     danglingRefWarning: string;
+    labMinCodeBlocks: string;
+    labMinFigures: string;
+    labMinTextBlocks: string;
 }
 
 export const strings: Record<Language, AppStrings> = {
@@ -143,6 +146,9 @@ export const strings: Record<Language, AppStrings> = {
         titleDuplicate: 'Title must be unique within this experiment',
         unreferencedWarning: 'This block is not referenced in any text',
         danglingRefWarning: 'References a title that does not exist',
+        labMinCodeBlocks: 'Lab "{lab}": need at least {n} code block(s).',
+        labMinFigures: 'Lab "{lab}": need at least {n} figure(s).',
+        labMinTextBlocks: 'Lab "{lab}": need at least {n} text block(s).',
     },
     zh: {
         openFolder: '打开目录',
@@ -214,6 +220,9 @@ export const strings: Record<Language, AppStrings> = {
         titleDuplicate: '标题在本实验内不能重复',
         unreferencedWarning: '此内容未在文本中被引用',
         danglingRefWarning: '引用了不存在的标题',
+        labMinCodeBlocks: '实验"{lab}"：至少需要 {n} 段代码。',
+        labMinFigures: '实验"{lab}"：至少需要 {n} 张图片。',
+        labMinTextBlocks: '实验"{lab}"：至少需要 {n} 个文本块。',
     },
 };
 

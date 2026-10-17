@@ -5,11 +5,12 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Block } from '../types/lab-config';
 import { useLabStore } from '../state/useLabStore';
 import { useT } from '../i18n/useT';
-import { collectRefs, labelFor } from '../utils/block-utils';
+import { collectRefs } from '../utils/block-utils';
 import { TextBlock } from './blocks/TextBlock';
 import { ImageBlock } from './blocks/ImageBlock';
 import { CodeBlock } from './blocks/CodeBlock';
 import { MathBlock } from './blocks/MathBlock';
+import { IconGripVertical, IconX, IconAlertTriangle } from '@tabler/icons-react';
 
 export function BlockCard({ labId, block }: { labId: string; block: Block }) {
     const t = useT();
@@ -26,7 +27,6 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
 
     // 未引用警告
     const refs = collectRefs(blocks);
-    const label = labelFor(block);
     const hasTitle = block.type !== 'text' && block.title.trim() !== '';
     const unreferenced =
         block.type !== 'text' && hasTitle && !refs.has(block.title);
@@ -49,18 +49,13 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
                             {...attributes}
                             {...listeners}
                         >
-                            ⋮⋮
+                            <IconGripVertical size={16} />
                         </ActionIcon>
                     </Tooltip>
                     {unreferenced && (
                         <Tooltip label={t('unreferencedWarning')}>
-                            <span style={{ color: 'orange', cursor: 'help' }}>⚠</span>
+                            <IconAlertTriangle size={16} color="orange" style={{ cursor: 'help' }} />
                         </Tooltip>
-                    )}
-                    {label && (
-                        <span style={{ fontSize: 11, color: 'var(--mantine-color-dimmed)' }}>
-                            {label}
-                        </span>
                     )}
                 </Group>
                 <ActionIcon
@@ -70,7 +65,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
                     onClick={() => removeBlock(labId, block.uid)}
                     title={t('deleteBlock')}
                 >
-                    ✕
+                    <IconX size={16} />
                 </ActionIcon>
             </Group>
 

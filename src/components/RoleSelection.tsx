@@ -1,12 +1,6 @@
-import {
-    Box,
-    Button,
-    Group,
-    SimpleGrid,
-    Stack,
-    Text,
-    Title,
-} from '@mantine/core';
+import { Box, Button, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import type { ReactNode } from 'react';
+import { IconSchool, IconUserScreen } from '@tabler/icons-react';
 import { useLabStore } from '../state/useLabStore';
 import { strings } from '../i18n/strings';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
@@ -36,13 +30,13 @@ export function RoleSelection() {
 
                     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%">
                         <RoleCard
-                            icon="🎓"
+                            icon={<IconSchool size={40} />}
                             zh={strings.zh.iAmStudent}
                             en={strings.en.iAmStudent}
                             onClick={() => void setRole('student')}
                         />
                         <RoleCard
-                            icon="👩‍🏫"
+                            icon={<IconUserScreen size={40} />}
                             zh={strings.zh.iAmTeacher}
                             en={strings.en.iAmTeacher}
                             onClick={() => void setRole('teacher')}
@@ -55,7 +49,7 @@ export function RoleSelection() {
 }
 
 function RoleCard(props: {
-    icon: string;
+    icon: ReactNode;
     zh: string;
     en: string;
     onClick: () => void;
@@ -69,7 +63,7 @@ function RoleCard(props: {
             styles={{ label: { whiteSpace: 'normal', width: '100%' } }}
         >
             <Stack align="center" gap="xs">
-                <Text style={{ fontSize: 40 }}>{props.icon}</Text>
+                {props.icon}
                 <Text fw={600}>{props.zh}</Text>
                 <Text size="xs" c="dimmed">
                     {props.en}

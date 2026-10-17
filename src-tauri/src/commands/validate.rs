@@ -9,15 +9,25 @@ fn ref_bracket_re() -> &'static Regex {
     RE.get_or_init(|| Regex::new(r"\[\[([^\]]+)\]\]").unwrap())
 }
 
-fn has_code_block(blocks: &[Block]) -> bool {
-    blocks.iter().any(|b| matches!(b, Block::Code { .. }))
+fn count_code(blocks: &[Block]) -> usize {
+    blocks
+        .iter()
+        .filter(|b| matches!(b, Block::Code { .. }))
+        .count()
+}
+fn count_figures(blocks: &[Block]) -> usize {
+    blocks
+        .iter()
+        .filter(|b| matches!(b, Block::Image { .. }))
+        .count()
+}
+fn count_text(blocks: &[Block]) -> usize {
+    blocks
+        .iter()
+        .filter(|b| matches!(b, Block::Text { .. }))
+        .count()
 }
 
-fn has_figure(blocks: &[Block]) -> bool {
-    blocks.iter().any(|b| matches!(b, Block::Image { .. }))
-}
-
-/// 从所有文本块中提取 `[[title]]` 引用
 fn collect_refs(blocks: &[Block]) -> HashSet<String> {
     let mut refs = HashSet::new();
     for block in blocks {
@@ -30,7 +40,6 @@ fn collect_refs(blocks: &[Block]) -> HashSet<String> {
     refs
 }
 
-/// 所有可引用的 title 集合（图片/代码/公式）
 fn collect_titles(blocks: &[Block]) -> HashSet<String> {
     blocks
         .iter()
@@ -96,37 +105,60 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
         let blocks = data.records.get(&exp.id).unwrap_or(&empty);
         let rules = &exp.validation;
 
-        if rules.require_code_block && !has_code_block(blocks) {
+        let code_count = count_code(blocks);
+        let figure_count = count_figures(blocks);
+        let text_count = count_text(blocks);
+
+        if code_count < rules.min_code_blocks {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
-                kind: "code_block".into(),
-                extra: None,
+                kind: "min_code_blocks".into(),
+                extra: Some(rules.min_code_blocks),
                 label: None,
             });
         }
-        if rules.require_figure && !has_figure(blocks) {
+        if figure_count < rules.min_figures {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
-                kind: "figure".into(),
-                extra: None,
+                kind: "min_figures".into(),
+                extra: Some(rules.min_figures),
+                label: None,
+            });
+        }
+        if text_count < rules.min_text_blocks {
+            issues.push(ValidationIssue {
+                lab_id: exp.id.clone(),
+                kind: "min_text_blocks".into(),
+                extra: Some(rules.min_text_blocks),
+                label: None,
+            });
+        }
+        if prose_chars(blocks) < rules.min_prose_chars {
+            issues.push(ValidationIssue {
+                lab_id: exp.id.clone(),
+                kind: "prose".into(),
+                extra: Some(rules.min_prose_chars),
                 label: None,
             });
         }
 
-        // 未引用的 card（有 title 但正文没 [[title]]）
-        let refs = collect_refs(blocks);
-        for title in collect_titles(blocks) {
-            if !refs.contains(&title) {
-                issues.push(ValidationIssue {
-                    lab_id: exp.id.clone(),
-                    kind: "unreferenced".into(),
-                    extra: None,
-                    label: Some(title),
-                });
+        // 引用检查（可选）
+        if rules.require_all_referenced {
+            let refs = collect_refs(blocks);
+            for title in collect_titles(blocks) {
+                if !refs.contains(&title) {
+                    issues.push(ValidationIssue {
+                        lab_id: exp.id.clone(),
+                        kind: "unreferenced".into(),
+                        extra: None,
+                        label: Some(title),
+                    });
+                }
             }
         }
 
-        // 引用了但不存在的 card
+        // 引用了不存在的标题 → 总是检查
+        let refs = collect_refs(blocks);
         let titles = collect_titles(blocks);
         for r in &refs {
             if !titles.contains(r) {
@@ -137,15 +169,6 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
                     label: Some(r.clone()),
                 });
             }
-        }
-
-        if prose_chars(blocks) < rules.min_prose_chars {
-            issues.push(ValidationIssue {
-                lab_id: exp.id.clone(),
-                kind: "prose".into(),
-                extra: Some(rules.min_prose_chars),
-                label: None,
-            });
         }
     }
 

@@ -32,14 +32,18 @@ export function ExportBar() {
         for (const issue of report.issues) {
             const lab = config?.experiments.find((x) => x.id === issue.labId);
             const labName = lab ? lab.name : issue.labId;
-            if (issue.kind === 'code_block') lines.push(t('labMissingCode', { lab: labName }));
-            else if (issue.kind === 'figure') lines.push(t('labMissingFigure', { lab: labName }));
-            else if (issue.kind === 'unreferenced')
-                lines.push(t('unreferencedWarning') + `: ${labName} / ${issue.label}`);
-            else if (issue.kind === 'dangling_ref')
-                lines.push(t('danglingRefWarning') + `: ${labName} / ${issue.label}`);
+            if (issue.kind === 'min_code_blocks')
+                lines.push(t('labMinCodeBlocks', { lab: labName, n: issue.extra ?? 0 }));
+            else if (issue.kind === 'min_figures')
+                lines.push(t('labMinFigures', { lab: labName, n: issue.extra ?? 0 }));
+            else if (issue.kind === 'min_text_blocks')
+                lines.push(t('labMinTextBlocks', { lab: labName, n: issue.extra ?? 0 }));
             else if (issue.kind === 'prose')
                 lines.push(t('labTooShort', { lab: labName, n: issue.extra ?? 0 }));
+            else if (issue.kind === 'unreferenced')
+                lines.push(`${labName}：${t('unreferencedWarning')} (${issue.label})`);
+            else if (issue.kind === 'dangling_ref')
+                lines.push(`${labName}：${t('danglingRefWarning')} (${issue.label})`);
         }
         return lines;
     };

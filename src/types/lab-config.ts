@@ -51,9 +51,10 @@ export interface TypstConfig {
 }
 
 export interface ValidationRules {
-    requireCodeBlock: boolean;
-    requireFigure: boolean;
-    requireFigureReference: boolean;
+    requireAllReferenced: boolean;
+    minCodeBlocks: number;
+    minFigures: number;
+    minTextBlocks: number;
     minProseChars: number;
 }
 
@@ -137,7 +138,13 @@ export interface PreviewResult {
 
 export interface ValidationIssue {
     labId: string;
-    kind: 'code_block' | 'figure' | 'unreferenced' | 'dangling_ref' | 'prose';
+    kind:
+    | 'min_code_blocks'
+    | 'min_figures'
+    | 'min_text_blocks'
+    | 'prose'
+    | 'unreferenced'
+    | 'dangling_ref';
     extra?: number;
     label?: string;
 }

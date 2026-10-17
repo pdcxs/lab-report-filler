@@ -15,6 +15,7 @@ import {
     Title,
     UnstyledButton,
 } from '@mantine/core';
+import { IconGripVertical, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
@@ -71,7 +72,7 @@ function SortableLabButton(props: {
                 style={{ cursor: 'grab', padding: '0 4px', color: 'var(--mantine-color-dimmed)' }}
                 title="拖动排序"
             >
-                ⋮⋮
+                <IconGripVertical size={16} />
             </UnstyledButton>
             <Button
                 variant={props.active ? 'light' : 'subtle'}
@@ -82,7 +83,7 @@ function SortableLabButton(props: {
                 {props.index + 1}. {props.name || '(未命名)'}
             </Button>
             <Button variant="subtle" size="xs" color="red" onClick={props.onRemove}>
-                ×
+                <IconX size={14} />
             </Button>
         </Group>
     );
@@ -430,41 +431,68 @@ export function TeacherWorkspace() {
                                             updateExperiment(activeIdx, { placeholder: e.currentTarget.value })
                                         }
                                     />
-                                    <Checkbox
-                                        label="要求学生包含代码块"
-                                        checked={activeExp.validation.requireCodeBlock}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, {
-                                                validation: { ...activeExp.validation, requireCodeBlock: e.currentTarget.checked },
-                                            })
-                                        }
-                                    />
-                                    <Checkbox
-                                        label="要求学生包含图片"
-                                        checked={activeExp.validation.requireFigure}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, {
-                                                validation: { ...activeExp.validation, requireFigure: e.currentTarget.checked },
-                                            })
-                                        }
-                                    />
-                                    <Checkbox
-                                        label="要求学生引用图片"
-                                        checked={activeExp.validation.requireFigureReference}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, {
-                                                validation: { ...activeExp.validation, requireFigureReference: e.currentTarget.checked },
-                                            })
-                                        }
-                                    />
+                                    <Group grow>
+                                        <NumberInput
+                                            label="最少代码块数量"
+                                            min={0}
+                                            value={activeExp.validation.minCodeBlocks}
+                                            onChange={(v) =>
+                                                updateExperiment(activeIdx, {
+                                                    validation: {
+                                                        ...activeExp.validation,
+                                                        minCodeBlocks: typeof v === 'number' ? v : 0,
+                                                    },
+                                                })
+                                            }
+                                        />
+                                        <NumberInput
+                                            label="最少图片数量"
+                                            min={0}
+                                            value={activeExp.validation.minFigures}
+                                            onChange={(v) =>
+                                                updateExperiment(activeIdx, {
+                                                    validation: {
+                                                        ...activeExp.validation,
+                                                        minFigures: typeof v === 'number' ? v : 0,
+                                                    },
+                                                })
+                                            }
+                                        />
+                                        <NumberInput
+                                            label="最少文本块数量"
+                                            min={0}
+                                            value={activeExp.validation.minTextBlocks}
+                                            onChange={(v) =>
+                                                updateExperiment(activeIdx, {
+                                                    validation: {
+                                                        ...activeExp.validation,
+                                                        minTextBlocks: typeof v === 'number' ? v : 0,
+                                                    },
+                                                })
+                                            }
+                                        />
+                                    </Group>
                                     <NumberInput
-                                        label="最少文字说明字符数"
+                                        label="最少文字说明字符数（所有文本块合计）"
+                                        min={0}
                                         value={activeExp.validation.minProseChars}
                                         onChange={(v) =>
                                             updateExperiment(activeIdx, {
                                                 validation: {
                                                     ...activeExp.validation,
-                                                    minProseChars: typeof v === 'number' ? v : 50,
+                                                    minProseChars: typeof v === 'number' ? v : 0,
+                                                },
+                                            })
+                                        }
+                                    />
+                                    <Checkbox
+                                        label="所有图片/代码/公式都必须被引用（有标题就必须在正文 [[标题]] 引用）"
+                                        checked={activeExp.validation.requireAllReferenced}
+                                        onChange={(e) =>
+                                            updateExperiment(activeIdx, {
+                                                validation: {
+                                                    ...activeExp.validation,
+                                                    requireAllReferenced: e.currentTarget.checked,
                                                 },
                                             })
                                         }

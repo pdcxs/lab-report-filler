@@ -1,10 +1,16 @@
 import { Button, Menu } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { open as openFile } from '@tauri-apps/plugin-dialog';
-import type { Block } from '../types/lab-config';
 import { useT } from '../i18n/useT';
 import { useLabStore } from '../state/useLabStore';
 import { newUid } from '../utils/uid';
+import {
+    IconCode,
+    IconMathFunction,
+    IconPhoto,
+    IconPlus,
+    IconTextSize,
+} from '@tabler/icons-react';
 
 export function AddBlockMenu({ labId }: { labId: string }) {
     const t = useT();
@@ -49,15 +55,23 @@ export function AddBlockMenu({ labId }: { labId: string }) {
     return (
         <Menu shadow="md" position="bottom-end">
             <Menu.Target>
-                <Button variant="light" size="xs">
-                    + {t('addBlock')}
+                <Button variant="light" size="xs" leftSection={<IconPlus size={14} />}>
+                    {t('addBlock')}
                 </Button>
             </Menu.Target>
             <Menu.Dropdown>
-                <Menu.Item onClick={addText}>{t('blockText')}</Menu.Item>
-                <Menu.Item onClick={() => void addImage()}>{t('blockImage')}</Menu.Item>
-                <Menu.Item onClick={addCode}>{t('blockCode')}</Menu.Item>
-                <Menu.Item onClick={addMath}>{t('blockMath')}</Menu.Item>
+                <Menu.Item leftSection={<IconTextSize size={16} />} onClick={addText}>
+                    {t('blockText')}
+                </Menu.Item>
+                <Menu.Item leftSection={<IconPhoto size={16} />} onClick={() => void addImage()}>
+                    {t('blockImage')}
+                </Menu.Item>
+                <Menu.Item leftSection={<IconCode size={16} />} onClick={addCode}>
+                    {t('blockCode')}
+                </Menu.Item>
+                <Menu.Item leftSection={<IconMathFunction size={16} />} onClick={addMath}>
+                    {t('blockMath')}
+                </Menu.Item>
             </Menu.Dropdown>
         </Menu>
     );

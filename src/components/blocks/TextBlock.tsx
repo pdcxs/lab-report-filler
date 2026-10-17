@@ -4,6 +4,7 @@ import type { Block } from '../../types/lab-config';
 import { useT } from '../../i18n/useT';
 import { useLabStore } from '../../state/useLabStore';
 import { EMPTY_BLOCKS } from '../../utils/constants';
+import { IconCode, IconMathFunction, IconPhoto } from '@tabler/icons-react';
 
 type TitledBlock = Extract<Block, { type: 'image' | 'code' | 'math' }>;
 
@@ -75,14 +76,15 @@ export function TextBlock({
                 </Menu.Target>
                 <Menu.Dropdown>
                     {referenceables.map((b) => {
-                        const icon =
-                            b.type === 'image' ? '🖼' : b.type === 'code' ? '💻' : '∑';
+                        const Icon =
+                            b.type === 'image' ? IconPhoto : b.type === 'code' ? IconCode : IconMathFunction;
                         return (
                             <Menu.Item
                                 key={b.uid}
+                                leftSection={<Icon size={16} />}
                                 onClick={() => insertAtCursor(`[[${b.title}]]`)}
                             >
-                                {icon} {b.title}
+                                {b.title}
                             </Menu.Item>
                         );
                     })}

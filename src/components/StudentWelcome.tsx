@@ -7,6 +7,7 @@ import { strings } from '../i18n/strings';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { useOpenFolder } from '../hooks/useOpenFolder';
 import { useUiStore } from '../state/useUiStore';
+import { IconFileZip } from '@tabler/icons-react';
 
 export function StudentWelcome() {
     const clearRole = useLabStore((s) => s.clearRole);
@@ -84,7 +85,7 @@ export function StudentWelcome() {
                         }}
                     >
                         <Stack align="center" gap="sm">
-                            <Text style={{ fontSize: 32 }}>📦</Text>
+                            <IconFileZip size={32} />
                             <Button variant="light">
                                 {strings.zh.openZip} / {strings.en.openZip}
                             </Button>
