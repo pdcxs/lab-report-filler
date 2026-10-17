@@ -1,30 +1,10 @@
 # Lab Report Filler
 
-A desktop app for filling in Typst-based lab reports without touching Typst source code. Instructors design the template; students only fill in their name, student ID, class, location, and experiment records. Export produces a clean PDF named `{ChineseName} - {StudentID}.pdf`.
+A desktop app for filling in lab reports without touching source code. Instructors design the template and distribute it as a ZIP; students fill in text, insert images/code/formulas as cards, and export a PDF with one click.
 
 [English](README.md) | [中文](README.zh.md)
 
 ---
-
-## Overview
-
-Lab Report Filler solves a common problem in programming courses: students are unfamiliar with LaTeX/Typst markup, and their Word/LaTeX formatting is inconsistent. This app lets instructors define the lab structure (objectives, content, requirements, validation rules) in a single `lab.json` file, then distribute it as a ZIP package. Students open the ZIP, fill in text boxes, and click **Export PDF**.
-
-The app is built with **Tauri 2 + React + TypeScript + Mantine**, and bundles the Typst compiler so students do not need to install anything beyond the app itself.
-
-## Features
-
-- 🎯 **Zero Typst knowledge required** — students only see text fields and buttons.
-- 🌐 **Bilingual UI** — driven by `language` in `lab.json` (`"zh"` or `"en"`).
-- 🌓 **Light / dark theme** — follows the system or manual toggle.
-- 🖼️ **Friendly image insertion** — pick a file, set a label and caption, and the app copies it into `images/` and inserts a labeled `#figure(...)` block.
-- 💻 **Code block insertion** — pick a language, paste code, add a caption and label.
-- 🔗 **Reference helper** — lists all labeled figures and code blocks in the current record and inserts `@label` on click.
-- 📄 **Live preview** — recompiles 800 ms after the last edit and renders SVG pages on the right.
-- ✅ **Pre-export validation** — missing code blocks, figures, references, or short prose will block the export with a clear modal.
-- 💾 **Auto-save** — writes to a JSON file 800 ms after the last edit.
-- 🗂️ **Folder memory** — reopens the last lab folder on next launch.
-- 👩‍🏫 **Teacher mode** — build and preview a lab template, then export it as a ZIP for students.
 
 ## System Requirements
 
@@ -34,33 +14,36 @@ The app is built with **Tauri 2 + React + TypeScript + Mantine**, and bundles th
 
 ### Installing Typst on Linux
 
-This app requires the [Typst](https://typst.app/) compiler to generate PDFs. Windows and macOS builds bundle Typst; **Linux builds do not**. Install it first:
+The app uses the [Typst](https://typst.app/) compiler to generate PDFs. Windows and macOS builds bundle Typst; **Linux builds do not**. Install it first:
 
-| Distribution | Command |
-|---|---|
-| Arch Linux | `sudo pacman -S typst` |
-| Ubuntu / Debian | `sudo apt install typst` |
-| Fedora | `sudo dnf install typst` |
-| openSUSE | `sudo zypper install typst` |
-| Any system with Rust | `cargo install typst-cli` |
+| Distribution         | Command                     |
+| -------------------- | --------------------------- |
+| Arch Linux           | `sudo pacman -S typst`      |
+| Ubuntu / Debian      | `sudo apt install typst`    |
+| Fedora               | `sudo dnf install typst`    |
+| openSUSE             | `sudo zypper install typst` |
+| Any system with Rust | `cargo install typst-cli`   |
 
-
-If your distribution's repository does not provide a `typst` package, use `cargo install typst-cli` (requires Rust to be installed). After installation, verify with:
+If your distribution's repository does not provide a `typst` package, use `cargo install typst-cli` (requires Rust). After installation, verify with:
 
 ```bash
 typst --version
 ```
 
+The app checks for Typst on startup and shows installation instructions if it is missing.
+
+---
+
 ## Installation
 
 Download the installer for your platform from the [Releases](https://github.com/pdcxs/lab-report-filler/releases) page:
 
-| Platform                         | Recommended installer |
-| -------------------------------- | --------------------- |
-| Windows                          | `.msi` or `.exe`      |
-| macOS (Apple Silicon / M-series) | `aarch64.dmg`         |
-| macOS (Intel)                    | `x64.dmg`             |
-| Linux                            | `.AppImage` or `.deb` |
+| Platform                         | Installer                                          |
+| -------------------------------- | -------------------------------------------------- |
+| Windows                          | `.msi` or `.exe`                                   |
+| macOS (Apple Silicon / M-series) | `aarch64.dmg`                                      |
+| macOS (Intel)                    | `x64.dmg`                                          |
+| Linux                            | `.deb` or `.AppImage` (requires Typst — see above) |
 
 **macOS users**: The app is not code-signed. On first launch, macOS may warn that it is from an unidentified developer. Right-click the app → **Open**, or allow it in **System Settings → Privacy & Security**.
 
@@ -68,226 +51,159 @@ Download the installer for your platform from the [Releases](https://github.com/
 
 ## For Students
 
-### Step 1 — Get the lab package
+### 1. Get the lab package
 
-Your instructor will give you a **ZIP file** (for example `Java-Programming-Lab.zip`). Download it to your computer. **Do not** unzip it manually — the app will do it for you.
+Your instructor will give you a **ZIP file** (for example `Java-Programming-Lab.zip`). Do not unzip it manually — the app will do that for you.
 
-### Step 2 — Choose Student mode
+### 2. Choose Student mode
 
 Launch the app. On the welcome screen, click **I am a Student**.
 
-### Step 3 — Open the ZIP
+### 3. Open the ZIP
 
-You have two ways:
+You can either:
 
-- Click **Open ZIP**, then select the ZIP file you received.
-- Or **drag and drop** the ZIP file directly onto the app window.
+- Click **Open ZIP** and select the ZIP file.
+- Or drag the ZIP file onto the app window.
 
-The app will show a modal asking you to **choose an empty folder**. The lab package will be extracted there.
+A dialog will ask you to **choose an empty folder**. The package will be extracted there.
 
-**Important**: Pick an *empty* folder (for example, create a new folder on your Desktop called `JavaLab`). If the folder already contains files, the app will ask you to choose another one.
+> Pick an empty folder, for example a new folder on your Desktop named `JavaLab`. If the folder already has files, you will be asked to pick another one.
 
-### Step 4 — Fill in your information
+### 4. Fill in your information
 
-On the left panel, fill in:
+On the left panel:
 
-- **Chinese Name** — must contain at least one Chinese character.
+- **Name** — must contain at least one Chinese character.
 - **Student ID** — 4–20 letters or digits.
-- **Class** — leave blank to use the default from your instructor.
-- **Location** — leave blank to use the default from your instructor.
+- **Class** — leave blank to use the default.
+- **Location** — leave blank to use the default.
 
-### Step 5 — Work on each experiment
+Your work saves automatically 800 ms after you stop typing. The badge at the top shows **Saving…** or **Saved**.
 
-Switch between experiments using the list on the left.
+### 5. Work on each experiment
 
-The right side shows three sections:
+Switch experiments using the list on the left. Each experiment page has:
 
-1. **Objectives & Requirements** — read-only.
-2. **Experiment Content** — read-only. This is the task.
-3. **What to include in your record** — read-only hints.
+- **Objectives & Requirements** — read-only.
+- **Experiment Content** — read-only. This is the task.
+- **Report date** — optional. Leave empty to use today's date on the cover.
+- **Experiment Record** — the editor, where you build your report from cards.
 
-Below these is the **Experiment Record** editor, where you write your answer.
+### 6. Build your record with cards
 
-### Step 6 — Write your record
+Click **Add block** to insert one of four card types. Each card can be dragged to reorder and deleted individually.
 
-Use the toolbar buttons above the editor:
+**Text card** — type your explanation. Typst syntax is supported:
 
-- **Insert Code** — pick a language, paste your code, give it a caption and a label. The app inserts a `#figure` block with your code.
-- **Insert Image** — pick a screenshot, set a label and caption. The app copies the image into the project and inserts a labeled figure.
-- **Insert Reference** — lists all labeled figures and code blocks in the current record. Click one to insert `@label` into your text. Use this to refer to your figures in prose.
-- **Show Example** — if your instructor provided a sample for this experiment, click to view it. You can copy it into the editor and adapt it. Not all experiments have samples.
+- `= Heading` for level-1, `== Heading` for level-2, and so on.
+- `*bold*`, `_italic_`.
+- `` `inline code` `` for inline code.
+- `$x^2 + y^2 = r^2$` for inline math.
+- `[[Title]]` to reference another card (see below). `#`, `[`, `]`, `@`, and `//` are escaped automatically, so you can type them safely.
 
-Each record must contain (per the validation rules):
+**Image card** — pick a screenshot, give it a **title** (required, must be unique within this experiment), and adjust the display width. The title is used as the figure caption.
 
-- At least one code block.
-- At least one figure.
-- A reference to that figure in the text (using `@label`).
-- At least 50 characters of prose (excluding code, figures, and Typst commands).
+**Code card** — choose a language, paste your code, and give it a **title** (required, must be unique). The title is used as the listing caption.
 
-### Step 7 — Preview
+**Formula card** — use https://typerino.com/ to compose the formula, paste it here. Give it a **title** (optional). If you set a title, the formula is numbered and can be referenced; if not, it renders as a plain block formula without a number.
 
-The panel on the right recompiles 800 ms after you stop typing and shows the live PDF layout.
+### 7. Reference other cards
 
-### Step 8 — Validate and Export
+Every image, code, and formula card with a title can be referenced from a text card. In a text card, click **Insert Reference** and pick a title. The app inserts `[[Title]]` at the cursor, which will render as `@label` in the PDF and create a clickable "Figure 1" / "Listing 1" / "(1)" reference.
 
-Click **Validate** in the bottom-right to check everything. If something is missing, a modal will tell you exactly what.
+**You should reference every image, code, and formula you insert.** Unreferenced cards are highlighted in yellow, and export will be blocked if your instructor enabled that check.
 
-When validation passes, click **Export PDF**. The PDF will be created in the project folder with the name:
+### 8. Preview
 
-```
-{ChineseName} - {StudentID}.pdf
-```
+The right panel shows a live preview of the generated PDF, refreshed 800 ms after your last edit.
 
-You can also click **Open Project Folder** in the top bar to open the folder in your file manager.
+### 9. Validate and export
 
-### Step 9 — Submit
+Click **Validate** to check for missing name, ID, or required blocks. If something is missing, a dialog tells you exactly what.
 
-Upload the PDF file to your course's submission system.
+Click **Export PDF** to generate `{Your Name} - {Your ID}.pdf` in the lab folder. You can click **Open Project Folder** in the top bar to open the folder in your file manager.
+
+### 10. Submit
+
+Upload the PDF to your course's submission system.
 
 ### Tips
 
-- **Autosave**: Your work is saved automatically 800 ms after you stop typing. The badge at the top shows **Saving…** or **Saved**.
-- **Switching projects**: To work on another lab, click **Open ZIP** in the top bar.
-- **Reopening**: The app remembers your last folder and opens it automatically next time.
-- **Missing toolbar**: If you don't see the toolbar buttons, make sure you are in the **Experiment Record** editor (below the read-only panels).
+- **Switch projects**: click **Open ZIP** in the top bar to open another lab.
+- **Reopen last project**: the app opens your last lab folder automatically next time.
+- **Close the PDF before re-exporting**: if the PDF is open in a reader, the app will tell you to close it first.
 
 ---
 
 ## For Instructors
 
-### Step 1 — Choose Teacher mode
+### 1. Choose Teacher mode
 
-Launch the app, click **I am a Teacher** on the welcome screen.
+Launch the app, click **I am a Teacher**.
 
-### Step 2 — Fill in course info
-
-Enter:
+### 2. Fill in course information
 
 - **Course Name** — the course title, shown on the cover page.
 - **Teacher** — the instructor's name, shown on the cover page.
 - **Default Class** — the class name shown on the cover. Students can override it.
 - **Default Location** — the lab room shown on the cover. Students can override it.
-- **Language** — `zh` or `en`. Controls the UI language students see.
-- **Code Languages** — one language per line. Students will see these in the **Insert Code** dropdown.
+- **Language** — `中文` or `English`. Controls the interface language students see.
+- **Code Languages** — one language per line. Students see these in the **Code card** dropdown.
 
-### Step 3 — Configure student fields
+### 3. Configure student fields
 
-Set the labels and placeholders students will see for their name, student ID, class, and location. You can also set:
+The labels and placeholders for name, student ID, class, and location are set automatically from the language. You can still configure:
 
 - Minimum / maximum name length.
 - Whether the name must contain at least one Chinese character.
-- A regex pattern for validating the student ID format.
+- A regex pattern to validate the student ID format.
 
-### Step 4 — Add experiments
+### 4. Add experiments
 
 Click **+ Add Experiment** to add experiments. For each experiment:
 
 - **Name** — the experiment title, shown on the cover and at the top of the experiment page.
-- **Objectives & Requirements** — Typst source. Write `+ 内容` to create a numbered list item, or write plain paragraphs.
-- **Experiment Content** — Typst source. Same rules.
-- **Instrument** — equipment used, e.g. a computer, a multimeter, etc.
-- **Record Guide** — one line per item. These appear to students as bullet-point hints.
-- **Editor Placeholder** — text shown in the empty editor box.
-- **Example** — content shown when the student clicks **Show Example**. Can be empty.
-- **Validation rules** — what each student record must contain (code block, figure, figure reference, minimum prose length).
+- **Objectives & Requirements** — Typst source. Write `+ Item` to create a numbered list item, or write plain paragraphs.
+- **Content** — Typst source. Same rules.
+- **Instrument** — equipment used, e.g. "Computer".
+- **Record Guide** — one line per item. Students see these as bullet-point hints.
+- **Editor placeholder** — hint text shown in the empty editor.
+- **Validation rules**:
+  - Minimum number of code cards, image cards, and text cards.
+  - Minimum number of prose characters (sum across all text cards).
+  - Whether every image/code/formula card must be referenced from a text card via `[[Title]]`.
 
-You can drag experiments in the left panel to reorder them.
+Drag experiments in the left panel to reorder them.
 
-### Step 5 — Preview
+### 5. Preview
 
-Click **Open Preview** in the top bar to see the full report as it would be rendered. The preview updates 800 ms after the last edit.
+Click **Open Preview** in the top bar to see the rendered report. The preview updates 800 ms after the last edit.
 
-The preview uses the default logo. To see a different logo, click **Select Logo** and pick an image file.
+The preview uses the default logo (Taiyuan University of Technology). To use another logo, click **Select Logo** and pick an image file.
 
-### Step 6 — Export the package
+### 6. Export the package
 
-Click **Export ZIP** in the top bar. Choose where to save the ZIP file. The app will:
+Click **Export ZIP** and choose where to save the ZIP. The app will:
 
-1. Create a temporary folder with:
-   - `lab.json`
-   - `utils/utils.typ`
-   - `imgs/tyut-logo.jpg` (or the logo you selected)
-2. Compress it into a ZIP at the location you chose.
+1. Create a temporary folder containing `lab.json`, `utils/utils.typ`, and `imgs/tyut-logo.jpg`.
+2. Compress it into the ZIP you specified.
 3. Clean up the temporary folder.
 
-Distribute the ZIP to your students (via LMS, email, USB, etc.).
+Distribute the ZIP to your students (LMS, email, USB, etc.).
 
-### Persistent draft
+### 7. Persistent draft
 
-Your edits are saved automatically to a draft file in the app data folder (`teacher-draft.json`). If you close the app and reopen it, your work-in-progress will be restored.
+Your edits are saved automatically to a draft in the app data folder. Close and reopen the app and your work-in-progress will be restored. Click **New** to start over with an empty template.
 
-To start over, click **New** in the top bar. This clears the current draft and starts with an empty template.
+### 8. Customizing the cover
 
-### Customizing the cover
+To use a different institution's logo, click **Select Logo** and pick an image. It will be packaged as `imgs/tyut-logo.jpg` regardless of the original file name.
 
-The default `utils/utils.typ` includes a cover page with the Taiyuan University of Technology logo. If you want to use a different institution's logo:
-
-1. Click **Select Logo** and choose the image.
-2. It will be included in the ZIP as `imgs/tyut-logo.jpg`, regardless of the original filename.
-
-To customize the cover layout itself, edit `utils/utils.typ` in the exported folder and re-zip manually. The app does not currently support editing `utils.typ` from the UI.
-
-### Editing `lab.json` directly
-
-If you need to edit `lab.json` (for example, to add custom Typst commands in the preamble), unzip the exported package, edit the file, and re-zip it. The app reads the standard `lab.json` schema.
+To change the cover layout itself, edit `utils/utils.typ` in the exported folder and re-zip manually. The app does not support editing `utils.typ` from the UI.
 
 ---
-
-## Project Structure
-
-An extracted lab package looks like this:
-
-```
-lab-folder/
-├── lab.json                    # Course config + experiments
-├── images/                     # Student images (created automatically)
-├── utils/
-│   └── utils.typ               # Cover page template
-├── imgs/
-│   └── tyut-logo.jpg           # Cover logo
-├── report-draft.json           # Student data (before ID is set)
-└── report-{studentId}.json     # Student data (after ID is set)
-```
-
-After exporting, you will also find:
-
-```
-{ChineseName} - {StudentID}.pdf
-```
-
----
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Download the Typst sidecar for your platform
-# See .github/workflows/release.yml for naming conventions
-# Place the binary in src-tauri/binaries/
-
-# Run in development mode
-npm run tauri dev
-
-# Build installers locally
-npm run tauri build
-```
-
-**Stack**: Tauri 2, React 18, TypeScript, Mantine 7, Zustand.
-
-## Releasing
-
-Push a tag to trigger GitHub Actions. The workflow builds installers for Windows, macOS (Intel + ARM), and Linux, and creates a draft release.
-
-```bash
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-Then check the draft on the GitHub Releases page and click **Publish** when ready.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
