@@ -266,6 +266,15 @@ pub fn generate(config: &LabConfig, student: &StudentData) -> String {
         out.push_str("#set text(lang: \"zh\")\n");
     }
 
+    let has_eq_numbering = config
+        .typst
+        .preamble
+        .iter()
+        .any(|line| line.contains("math.equation") && line.contains("numbering"));
+    if !has_eq_numbering {
+        out.push_str("#set math.equation(numbering: \"(1)\")\n");
+    }
+
     for line in &config.typst.preamble {
         out.push_str(&replace_simple(line, config, student, ""));
         out.push('\n');
