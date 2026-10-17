@@ -99,15 +99,13 @@ export function TeacherWorkspace() {
     const updateCourse = useTeacherStore((s) => s.updateCourse);
     const setLanguage = useTeacherStore((s) => s.setLanguage);
     const updateStudentName = useTeacherStore((s) => s.updateStudentName);
-    const updateClassName = useTeacherStore((s) => s.updateClassName);
-    const updateLocation = useTeacherStore((s) => s.updateLocation);
+    const updateStudentId = useTeacherStore((s) => s.updateStudentId);
     const setCodeLanguages = useTeacherStore((s) => s.setCodeLanguages);
     const updateExperiment = useTeacherStore((s) => s.updateExperiment);
     const addExperiment = useTeacherStore((s) => s.addExperiment);
     const removeExperiment = useTeacherStore((s) => s.removeExperiment);
     const reorderExperiments = useTeacherStore((s) => s.reorderExperiments);
     const setActiveLabIndex = useTeacherStore((s) => s.setActiveLabIndex);
-    const updateStudentId = useTeacherStore((s) => s.updateStudentId);
     const newConfig = useTeacherStore((s) => s.newConfig);
 
     const [exporting, setExporting] = useState(false);
@@ -168,7 +166,12 @@ export function TeacherWorkspace() {
                 styles: { description: { whiteSpace: 'pre-wrap' } },
             });
         } catch (e) {
-            notifications.show({ color: 'red', title: '导出失败', message: String(e), autoClose: 10000 });
+            notifications.show({
+                color: 'red',
+                title: '导出失败',
+                message: String(e),
+                autoClose: 10000,
+            });
         } finally {
             setExporting(false);
         }
@@ -180,7 +183,11 @@ export function TeacherWorkspace() {
 
     return (
         <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh' }}>
-            <Box p="xs" px="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}>
+            <Box
+                p="xs"
+                px="md"
+                style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}
+            >
                 <Group justify="space-between">
                     <Text fw={600}>教师模式</Text>
                     <Group gap="sm">
@@ -211,7 +218,12 @@ export function TeacherWorkspace() {
                         <Button variant="subtle" size="xs" onClick={() => void clearRole()}>
                             切换身份
                         </Button>
-                        <Button variant="light" size="xs" loading={exporting} onClick={() => void handleExport()}>
+                        <Button
+                            variant="light"
+                            size="xs"
+                            loading={exporting}
+                            onClick={() => void handleExport()}
+                        >
                             导出 ZIP
                         </Button>
                         <ColorSchemeToggle />
@@ -223,9 +235,15 @@ export function TeacherWorkspace() {
                 <Box
                     w={240}
                     p="md"
-                    style={{ borderRight: '1px solid var(--mantine-color-gray-3)', overflowY: 'auto', flexShrink: 0 }}
+                    style={{
+                        borderRight: '1px solid var(--mantine-color-gray-3)',
+                        overflowY: 'auto',
+                        flexShrink: 0,
+                    }}
                 >
-                    <Title order={5} mb="sm">实验列表</Title>
+                    <Title order={5} mb="sm">
+                        实验列表
+                    </Title>
                     <Stack gap="xs">
                         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                             <SortableContext
@@ -256,7 +274,9 @@ export function TeacherWorkspace() {
                 <ScrollArea style={{ flex: 1, minWidth: 0 }}>
                     <Stack p="md" gap="md">
                         <Card withBorder>
-                            <Title order={5} mb="sm">课程信息</Title>
+                            <Title order={5} mb="sm">
+                                课程信息
+                            </Title>
                             <Stack gap="sm">
                                 <TextInput
                                     label="课程名称"
@@ -305,82 +325,60 @@ export function TeacherWorkspace() {
                         </Card>
 
                         <Card withBorder>
-                            <Title order={5} mb="sm">学生字段配置</Title>
+                            <Title order={5} mb="sm">
+                                学生字段配置
+                            </Title>
                             <Stack gap="sm">
-                                <TextInput
-                                    label="姓名字段标签"
-                                    value={config.student.name.label}
-                                    onChange={(e) => updateStudentName({ label: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="姓名输入提示"
-                                    value={config.student.name.placeholder}
-                                    onChange={(e) => updateStudentName({ placeholder: e.currentTarget.value })}
-                                />
-                                <NumberInput
-                                    label="姓名最小长度"
-                                    value={config.student.name.minLength}
-                                    onChange={(v) => updateStudentName({ minLength: typeof v === 'number' ? v : 2 })}
-                                />
-                                <NumberInput
-                                    label="姓名最大长度"
-                                    value={config.student.name.maxLength}
-                                    onChange={(v) => updateStudentName({ maxLength: typeof v === 'number' ? v : 20 })}
-                                />
+                                <Text size="xs" c="dimmed">
+                                    姓名、学号、班级、地点的标签和提示文字由界面语言自动决定，切换语言时会自动更新。以下选项对两个语言都生效。
+                                </Text>
+                                <Group grow>
+                                    <NumberInput
+                                        label="姓名最小长度"
+                                        min={1}
+                                        value={config.student.name.minLength}
+                                        onChange={(v) =>
+                                            updateStudentName({ minLength: typeof v === 'number' ? v : 2 })
+                                        }
+                                    />
+                                    <NumberInput
+                                        label="姓名最大长度"
+                                        min={1}
+                                        value={config.student.name.maxLength}
+                                        onChange={(v) =>
+                                            updateStudentName({ maxLength: typeof v === 'number' ? v : 20 })
+                                        }
+                                    />
+                                </Group>
                                 <Checkbox
                                     label="姓名必须包含中文字符"
                                     checked={config.student.name.requireCjk}
-                                    onChange={(e) => updateStudentName({ requireCjk: e.currentTarget.checked })}
-                                />
-
-                                <TextInput
-                                    label="学号字段标签"
-                                    value={config.student.studentId.label}
-                                    onChange={(e) => updateStudentId({ label: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="学号输入提示"
-                                    value={config.student.studentId.placeholder}
-                                    onChange={(e) => updateStudentId({ placeholder: e.currentTarget.value })}
+                                    onChange={(e) =>
+                                        updateStudentName({ requireCjk: e.currentTarget.checked })
+                                    }
                                 />
                                 <TextInput
                                     label="学号匹配规则（正则表达式）"
                                     value={config.student.studentId.pattern}
-                                    onChange={(e) => updateStudentId({ pattern: e.currentTarget.value })}
-                                />
-
-                                <TextInput
-                                    label="班级字段标签"
-                                    value={config.student.className.label}
-                                    onChange={(e) => updateClassName({ label: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="班级输入提示"
-                                    value={config.student.className.placeholder}
-                                    onChange={(e) => updateClassName({ placeholder: e.currentTarget.value })}
-                                />
-
-                                <TextInput
-                                    label="实验地点字段标签"
-                                    value={config.student.location.label}
-                                    onChange={(e) => updateLocation({ label: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="实验地点输入提示"
-                                    value={config.student.location.placeholder}
-                                    onChange={(e) => updateLocation({ placeholder: e.currentTarget.value })}
+                                    onChange={(e) =>
+                                        updateStudentId({ pattern: e.currentTarget.value })
+                                    }
                                 />
                             </Stack>
                         </Card>
 
                         {activeExp && (
                             <Card withBorder>
-                                <Title order={5} mb="sm">实验：{activeExp.name || '(未命名)'}</Title>
+                                <Title order={5} mb="sm">
+                                    实验：{activeExp.name || '(未命名)'}
+                                </Title>
                                 <Stack gap="sm">
                                     <TextInput
                                         label="实验名称"
                                         value={activeExp.name}
-                                        onChange={(e) => updateExperiment(activeIdx, { name: e.currentTarget.value })}
+                                        onChange={(e) =>
+                                            updateExperiment(activeIdx, { name: e.currentTarget.value })
+                                        }
                                     />
                                     <Textarea
                                         label="实验目的和要求（Typst 源码，例如：+ 目的1）"
