@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import type {
     AppSettings,
+    Block,
     ExportResult,
     ImportedImage,
-    LabelInfo,
     LabConfig,
     LabSession,
     PreviewResult,
@@ -27,7 +27,8 @@ interface LabState {
     previewError: string | null;
     exporting: boolean;
     validating: boolean;
-    typstAvailable: boolean | null;   // null = 尚未检测
+
+    typstAvailable: boolean | null;
     typstMessage: string | null;
 
     init: () => Promise<void>;
@@ -36,16 +37,21 @@ interface LabState {
     openDir: (path: string) => Promise<void>;
     setActiveLab: (id: string) => void;
     updateStudent: (patch: Partial<StudentData>) => void;
-    updateRecord: (labId: string, content: string) => void;
-    registerLabel: (labId: string, info: LabelInfo) => void;
-    unregisterLabel: (labId: string, label: string) => void;
+
+    setBlocks: (labId: string, blocks: Block[]) => void;
+    addBlock: (labId: string, block: Block) => void;
+    updateBlock: (labId: string, uid: string, patch: Partial<Block>) => void;
+    removeBlock: (labId: string, uid: string) => void;
+    moveBlock: (labId: string, from: number, to: number) => void;
+    setDate: (labId: string, date: string | null) => void;
+
     saveNow: () => Promise<void>;
     importImage: (src: string) => Promise<ImportedImage>;
     refreshPreview: () => Promise<void>;
     validate: () => Promise<ValidationReport | null>;
     exportPdf: () => Promise<ExportResult | null>;
-    reset: () => void;
     checkTypst: () => Promise<void>;
+    reset: () => void;
 }
 
 const emptyStudent: StudentData = {
@@ -54,7 +60,7 @@ const emptyStudent: StudentData = {
     className: '',
     location: '',
     records: {},
-    labels: {},
+    dates: {},
 };
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -80,6 +86,17 @@ export const useLabStore = create<LabState>((set, get) => {
     const schedulePreview = () => {
         if (previewTimer) clearTimeout(previewTimer);
         previewTimer = setTimeout(() => void get().refreshPreview(), 800);
+    };
+
+    const applyBlocks = (labId: string, blocks: Block[]) => {
+        set((s) => ({
+            student: {
+                ...s.student,
+                records: { ...s.student.records, [labId]: blocks },
+            },
+        }));
+        scheduleSave();
+        schedulePreview();
     };
 
     return {
@@ -122,7 +139,16 @@ export const useLabStore = create<LabState>((set, get) => {
         },
 
         clearRole: async () => {
-            set({ role: null });
+            set({
+                role: null,
+                dir: null,
+                config: null,
+                student: emptyStudent,
+                activeLabId: null,
+                previewPages: [],
+                previewError: null,
+                lastSaved: null,
+            });
             await persist();
         },
 
@@ -155,42 +181,45 @@ export const useLabStore = create<LabState>((set, get) => {
             schedulePreview();
         },
 
-        updateRecord: (labId, content) => {
+        setBlocks: (labId, blocks) => applyBlocks(labId, blocks),
+
+        addBlock: (labId, block) => {
+            const current = get().student.records[labId] ?? [];
+            applyBlocks(labId, [...current, block]);
+        },
+
+        updateBlock: (labId, uid, patch) => {
+            const current = get().student.records[labId] ?? [];
+            const next = current.map((b) =>
+                b.uid === uid ? ({ ...b, ...patch } as Block) : b,
+            );
+            applyBlocks(labId, next);
+        },
+
+        removeBlock: (labId, uid) => {
+            const current = get().student.records[labId] ?? [];
+            applyBlocks(
+                labId,
+                current.filter((b) => b.uid !== uid),
+            );
+        },
+
+        moveBlock: (labId, from, to) => {
+            const current = [...(get().student.records[labId] ?? [])];
+            const [moved] = current.splice(from, 1);
+            current.splice(to, 0, moved);
+            applyBlocks(labId, current);
+        },
+
+        setDate: (labId, date) => {
             set((s) => ({
                 student: {
                     ...s.student,
-                    records: { ...s.student.records, [labId]: content },
+                    dates: { ...s.student.dates, [labId]: date },
                 },
             }));
             scheduleSave();
             schedulePreview();
-        },
-
-        registerLabel: (labId, info) => {
-            set((s) => {
-                const list = s.student.labels[labId] ?? [];
-                const filtered = list.filter((l) => l.label !== info.label);
-                return {
-                    student: {
-                        ...s.student,
-                        labels: { ...s.student.labels, [labId]: [...filtered, info] },
-                    },
-                };
-            });
-            scheduleSave();
-        },
-
-        unregisterLabel: (labId, label) => {
-            set((s) => {
-                const list = (s.student.labels[labId] ?? []).filter((l) => l.label !== label);
-                return {
-                    student: {
-                        ...s.student,
-                        labels: { ...s.student.labels, [labId]: list },
-                    },
-                };
-            });
-            scheduleSave();
         },
 
         saveNow: async () => {
@@ -266,6 +295,22 @@ export const useLabStore = create<LabState>((set, get) => {
             }
         },
 
+        checkTypst: async () => {
+            try {
+                const result = await invoke<{
+                    available: boolean;
+                    version: string | null;
+                    message: string | null;
+                }>('check_typst');
+                set({
+                    typstAvailable: result.available,
+                    typstMessage: result.message,
+                });
+            } catch (e) {
+                set({ typstAvailable: false, typstMessage: String(e) });
+            }
+        },
+
         reset: () => {
             set({
                 dir: null,
@@ -277,21 +322,5 @@ export const useLabStore = create<LabState>((set, get) => {
                 lastSaved: null,
             });
         },
-
-        checkTypst: async () => {
-            try {
-              const result = await invoke<{
-                available: boolean;
-                version: string | null;
-                message: string | null;
-              }>('check_typst');
-              set({
-                typstAvailable: result.available,
-                typstMessage: result.message,
-              });
-            } catch (e) {
-              set({ typstAvailable: false, typstMessage: String(e) });
-            }
-          },
     };
 });

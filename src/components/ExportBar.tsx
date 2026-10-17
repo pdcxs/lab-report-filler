@@ -34,8 +34,12 @@ export function ExportBar() {
             const labName = lab ? lab.name : issue.labId;
             if (issue.kind === 'code_block') lines.push(t('labMissingCode', { lab: labName }));
             else if (issue.kind === 'figure') lines.push(t('labMissingFigure', { lab: labName }));
-            else if (issue.kind === 'figure_reference') lines.push(t('labMissingRef', { lab: labName }));
-            else if (issue.kind === 'prose') lines.push(t('labTooShort', { lab: labName, n: issue.extra ?? 0 }));
+            else if (issue.kind === 'unreferenced')
+                lines.push(t('unreferencedWarning') + `: ${labName} / ${issue.label}`);
+            else if (issue.kind === 'dangling_ref')
+                lines.push(t('danglingRefWarning') + `: ${labName} / ${issue.label}`);
+            else if (issue.kind === 'prose')
+                lines.push(t('labTooShort', { lab: labName, n: issue.extra ?? 0 }));
         }
         return lines;
     };

@@ -65,7 +65,6 @@ export interface Experiment {
     instrument: string;
     recordGuide: string[];
     placeholder: string;
-    example: string;
     validation: ValidationRules;
 }
 
@@ -81,19 +80,35 @@ export interface LabConfig {
     codeLanguages: string[];
 }
 
-export interface LabelInfo {
-    label: string;
-    kind: 'figure' | 'code';
-    title: string;
-}
+// =====================================================================
+// Block
+// =====================================================================
+
+export type Block =
+    | { type: 'text'; uid: string; content: string }
+    | {
+        type: 'image';
+        uid: string;
+        title: string;
+        relativePath: string;
+        width: number;
+    }
+    | {
+        type: 'code';
+        uid: string;
+        title: string;
+        language: string;
+        code: string;
+    }
+    | { type: 'math'; uid: string; title: string; formula: string };
 
 export interface StudentData {
     name: string;
     studentId: string;
     className: string;
     location: string;
-    records: Record<string, string>;
-    labels: Record<string, LabelInfo[]>;
+    records: Record<string, Block[]>;
+    dates: Record<string, string | null>;
 }
 
 export interface LabSession {
@@ -122,8 +137,9 @@ export interface PreviewResult {
 
 export interface ValidationIssue {
     labId: string;
-    kind: 'code_block' | 'figure' | 'figure_reference' | 'prose';
+    kind: 'code_block' | 'figure' | 'unreferenced' | 'dangling_ref' | 'prose';
     extra?: number;
+    label?: string;
 }
 
 export interface ValidationReport {

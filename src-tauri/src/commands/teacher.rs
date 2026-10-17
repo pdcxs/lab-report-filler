@@ -1,6 +1,5 @@
 use crate::commands::typst::{format_typst_error, run_typst};
-use crate::model::LabConfig;
-use crate::model::StudentData;
+use crate::model::{Block, LabConfig, StudentData};
 use crate::typst_gen;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -139,7 +138,10 @@ pub async fn preview_teacher_config(
     for exp in &config.experiments {
         student.records.insert(
             exp.id.clone(),
-            format!("（学生 {} 的实验记录会显示在这里）\n", exp.name),
+            vec![Block::Text {
+                uid: format!("preview-{}", exp.id),
+                content: format!("（学生 {} 的实验记录会显示在这里）", exp.name),
+            }],
         );
     }
 

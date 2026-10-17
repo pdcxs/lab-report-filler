@@ -430,15 +430,6 @@ export function TeacherWorkspace() {
                                             updateExperiment(activeIdx, { placeholder: e.currentTarget.value })
                                         }
                                     />
-                                    <Textarea
-                                        label="示例内容"
-                                        autosize
-                                        minRows={4}
-                                        value={activeExp.example}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, { example: e.currentTarget.value })
-                                        }
-                                    />
                                     <Checkbox
                                         label="要求学生包含代码块"
                                         checked={activeExp.validation.requireCodeBlock}

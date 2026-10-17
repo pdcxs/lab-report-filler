@@ -1,75 +1,71 @@
-use crate::model::{LabConfig, StudentData};
+use crate::model::{Block, LabConfig, StudentData};
 use regex::Regex;
 use serde::Serialize;
+use std::collections::HashSet;
 use std::sync::OnceLock;
 
-fn label_re() -> &'static Regex {
+fn ref_bracket_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| Regex::new(r"<([a-zA-Z][a-zA-Z0-9_\-:.]*)>").unwrap())
+    RE.get_or_init(|| Regex::new(r"\[\[([^\]]+)\]\]").unwrap())
 }
 
-fn ref_re() -> &'static Regex {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| Regex::new(r"@([a-zA-Z][a-zA-Z0-9_\-:.]*)").unwrap())
+fn has_code_block(blocks: &[Block]) -> bool {
+    blocks.iter().any(|b| matches!(b, Block::Code { .. }))
 }
 
-fn code_block_re() -> &'static Regex {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| Regex::new(r"(?s)```.*?```").unwrap())
+fn has_figure(blocks: &[Block]) -> bool {
+    blocks.iter().any(|b| matches!(b, Block::Image { .. }))
 }
 
-fn command_re() -> &'static Regex {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| Regex::new(r"#[^\s\n]+").unwrap())
-}
-
-fn has_code_block(s: &str) -> bool {
-    code_block_re().is_match(s)
-}
-
-fn has_figure(s: &str) -> bool {
-    s.contains("image(") || s.contains("#figure(")
-}
-
-/// 要求：至少有一个 `<label>` 且正文里至少有一个对应的 `@label`。
-fn has_figure_reference(s: &str) -> bool {
-    let labels: Vec<_> = label_re()
-        .captures_iter(s)
-        .filter_map(|c| c.get(1).map(|m| m.as_str().to_string()))
-        .collect();
-    if labels.is_empty() {
-        return false;
+/// 从所有文本块中提取 `[[title]]` 引用
+fn collect_refs(blocks: &[Block]) -> HashSet<String> {
+    let mut refs = HashSet::new();
+    for block in blocks {
+        if let Block::Text { content, .. } = block {
+            for cap in ref_bracket_re().captures_iter(content) {
+                refs.insert(cap[1].to_string());
+            }
+        }
     }
-    let refs: Vec<_> = ref_re()
-        .captures_iter(s)
-        .filter_map(|c| c.get(1).map(|m| m.as_str().to_string()))
-        .collect();
-    labels.iter().any(|l| refs.iter().any(|r| r == l))
+    refs
 }
 
-/// 去掉代码块和 Typst 命令后，剩下的非空白字符数量。
-fn prose_chars(s: &str) -> usize {
-    let no_code = code_block_re().replace_all(s, "");
-    let no_cmd = command_re().replace_all(&no_code, "");
-    no_cmd.chars().filter(|c| !c.is_whitespace()).count()
+/// 所有可引用的 title 集合（图片/代码/公式）
+fn collect_titles(blocks: &[Block]) -> HashSet<String> {
+    blocks
+        .iter()
+        .filter_map(|b| b.title().map(|s| s.to_string()))
+        .collect()
+}
+
+fn prose_chars(blocks: &[Block]) -> usize {
+    blocks
+        .iter()
+        .filter_map(|b| {
+            if let Block::Text { content, .. } = b {
+                Some(content.chars().filter(|c| !c.is_whitespace()).count())
+            } else {
+                None
+            }
+        })
+        .sum()
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidationIssue {
     pub lab_id: String,
-    /// "code_block" | "figure" | "figure_reference" | "prose"
     pub kind: String,
-    /// 仅在 "prose" 时使用：说明需要多少字符。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidationReport {
     pub passed: bool,
-    /// "name" | "student_id" | 具体 labId + kind
     pub global_errors: Vec<String>,
     pub issues: Vec<ValidationIssue>,
 }
@@ -96,35 +92,59 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
 
     let mut issues = Vec::new();
     for exp in &config.experiments {
-        let content = data.records.get(&exp.id).map(|s| s.as_str()).unwrap_or("");
+        let empty: Vec<Block> = Vec::new();
+        let blocks = data.records.get(&exp.id).unwrap_or(&empty);
         let rules = &exp.validation;
 
-        if rules.require_code_block && !has_code_block(content) {
+        if rules.require_code_block && !has_code_block(blocks) {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
                 kind: "code_block".into(),
                 extra: None,
+                label: None,
             });
         }
-        if rules.require_figure && !has_figure(content) {
+        if rules.require_figure && !has_figure(blocks) {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
                 kind: "figure".into(),
                 extra: None,
+                label: None,
             });
         }
-        if rules.require_figure_reference && !has_figure_reference(content) {
-            issues.push(ValidationIssue {
-                lab_id: exp.id.clone(),
-                kind: "figure_reference".into(),
-                extra: None,
-            });
+
+        // 未引用的 card（有 title 但正文没 [[title]]）
+        let refs = collect_refs(blocks);
+        for title in collect_titles(blocks) {
+            if !refs.contains(&title) {
+                issues.push(ValidationIssue {
+                    lab_id: exp.id.clone(),
+                    kind: "unreferenced".into(),
+                    extra: None,
+                    label: Some(title),
+                });
+            }
         }
-        if prose_chars(content) < rules.min_prose_chars {
+
+        // 引用了但不存在的 card
+        let titles = collect_titles(blocks);
+        for r in &refs {
+            if !titles.contains(r) {
+                issues.push(ValidationIssue {
+                    lab_id: exp.id.clone(),
+                    kind: "dangling_ref".into(),
+                    extra: None,
+                    label: Some(r.clone()),
+                });
+            }
+        }
+
+        if prose_chars(blocks) < rules.min_prose_chars {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
                 kind: "prose".into(),
                 extra: Some(rules.min_prose_chars),
+                label: None,
             });
         }
     }

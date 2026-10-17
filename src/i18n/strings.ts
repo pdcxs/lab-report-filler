@@ -51,6 +51,25 @@ interface AppStrings {
     extractFailed: string;
     openExistingFolder: string;
     openInFileManager: string;
+    addBlock: string;
+    blockText: string;
+    blockImage: string;
+    blockCode: string;
+    blockMath: string;
+    blockTitle: string;
+    blockTitlePlaceholder: string;
+    blockCodeLanguage: string;
+    blockImageWidth: string;
+    blockFormula: string;
+    blockFormulaHint: string;
+    blockTextHint: string;
+    deleteBlock: string;
+    dateLabel: string;
+    dateDefault: string;
+    titleEmpty: string;
+    titleDuplicate: string;
+    unreferencedWarning: string;
+    danglingRefWarning: string;
 }
 
 export const strings: Record<Language, AppStrings> = {
@@ -105,6 +124,25 @@ export const strings: Record<Language, AppStrings> = {
         extractFailed: 'Failed to open the ZIP file.',
         openExistingFolder: 'Open Existing Folder',
         openInFileManager: 'Open Project Folder',
+        addBlock: 'Add block',
+        blockText: 'Text',
+        blockImage: 'Image',
+        blockCode: 'Code',
+        blockMath: 'Formula',
+        blockTitle: 'Title',
+        blockTitlePlaceholder: 'Give this block a unique title',
+        blockCodeLanguage: 'Language',
+        blockImageWidth: 'Width',
+        blockFormula: 'Formula',
+        blockFormulaHint: 'Use https://typerino.com/ to compose the formula, then paste it here (with or without surrounding $).',
+        blockTextHint: 'Type text here. Use [[Title]] to reference an image, code block, or formula. Typst syntax is supported: = heading, == subheading, *bold*, $x^2$, etc.',
+        deleteBlock: 'Delete',
+        dateLabel: 'Report date',
+        dateDefault: 'Default (today)',
+        titleEmpty: 'Title is required',
+        titleDuplicate: 'Title must be unique within this experiment',
+        unreferencedWarning: 'This block is not referenced in any text',
+        danglingRefWarning: 'References a title that does not exist',
     },
     zh: {
         openFolder: '打开目录',
@@ -157,6 +195,25 @@ export const strings: Record<Language, AppStrings> = {
         extractFailed: '打开 ZIP 文件失败。',
         openExistingFolder: '打开已有目录',
         openInFileManager: '打开项目目录',
+        addBlock: '添加内容',
+        blockText: '文本',
+        blockImage: '图片',
+        blockCode: '代码',
+        blockMath: '公式',
+        blockTitle: '标题',
+        blockTitlePlaceholder: '给这个内容起一个唯一的标题',
+        blockCodeLanguage: '语言',
+        blockImageWidth: '宽度',
+        blockFormula: '公式',
+        blockFormulaHint: '使用 https://typerino.com/ 编辑公式，然后粘贴到这里（带不带 $ 都可以）。',
+        blockTextHint: '在此输入文本。使用 [[标题]] 引用图片、代码或公式。支持 Typst 语法：= 标题、== 子标题、*粗体*、$x^2$ 等。',
+        deleteBlock: '删除',
+        dateLabel: '报告日期',
+        dateDefault: '默认（今天）',
+        titleEmpty: '标题不能为空',
+        titleDuplicate: '标题在本实验内不能重复',
+        unreferencedWarning: '此内容未在文本中被引用',
+        danglingRefWarning: '引用了不存在的标题',
     },
 };
 
