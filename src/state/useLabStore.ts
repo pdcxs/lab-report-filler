@@ -43,6 +43,7 @@ interface LabState {
     updateBlock: (labId: string, uid: string, patch: Partial<Block>) => void;
     removeBlock: (labId: string, uid: string) => void;
     moveBlock: (labId: string, from: number, to: number) => void;
+    prependBlock: (labId: string, block: Block) => void;
     setDate: (labId: string, date: string | null) => void;
 
     saveNow: () => Promise<void>;
@@ -186,6 +187,11 @@ export const useLabStore = create<LabState>((set, get) => {
         addBlock: (labId, block) => {
             const current = get().student.records[labId] ?? [];
             applyBlocks(labId, [...current, block]);
+        },
+
+        prependBlock: (labId, block) => {
+            const current = get().student.records[labId] ?? [];
+            applyBlocks(labId, [block, ...current]);
         },
 
         updateBlock: (labId, uid, patch) => {

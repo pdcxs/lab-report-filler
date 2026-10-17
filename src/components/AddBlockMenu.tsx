@@ -1,9 +1,6 @@
 import { Button, Menu } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { open as openFile } from '@tauri-apps/plugin-dialog';
-import { useT } from '../i18n/useT';
-import { useLabStore } from '../state/useLabStore';
-import { newUid } from '../utils/uid';
 import {
     IconCode,
     IconMathFunction,
@@ -11,17 +8,34 @@ import {
     IconPlus,
     IconTextSize,
 } from '@tabler/icons-react';
+import type { Block } from '../types/lab-config';
+import { useT } from '../i18n/useT';
+import { useLabStore } from '../state/useLabStore';
+import { newUid } from '../utils/uid';
 
-export function AddBlockMenu({ labId }: { labId: string }) {
+export function AddBlockMenu({
+    labId,
+    position = 'end',
+}: {
+    labId: string;
+    position?: 'start' | 'end';
+}) {
     const t = useT();
     const addBlock = useLabStore((s) => s.addBlock);
+    const prependBlock = useLabStore((s) => s.prependBlock);
     const importImage = useLabStore((s) => s.importImage);
     const config = useLabStore((s) => s.config);
 
-    const addText = () => addBlock(labId, { type: 'text', uid: newUid(), content: '' });
+    const insert = (block: Block) => {
+        if (position === 'start') prependBlock(labId, block);
+        else addBlock(labId, block);
+    };
+
+    const addText = () =>
+        insert({ type: 'text', uid: newUid(), content: '' });
 
     const addCode = () =>
-        addBlock(labId, {
+        insert({
             type: 'code',
             uid: newUid(),
             title: '',
@@ -30,17 +44,22 @@ export function AddBlockMenu({ labId }: { labId: string }) {
         });
 
     const addMath = () =>
-        addBlock(labId, { type: 'math', uid: newUid(), title: '', formula: '' });
+        insert({ type: 'math', uid: newUid(), title: '', formula: '' });
 
     const addImage = async () => {
         const selected = await openFile({
             multiple: false,
-            filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'] }],
+            filters: [
+                {
+                    name: 'Images',
+                    extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'],
+                },
+            ],
         });
         if (typeof selected !== 'string') return;
         try {
             const imported = await importImage(selected);
-            addBlock(labId, {
+            insert({
                 type: 'image',
                 uid: newUid(),
                 title: '',
@@ -53,7 +72,7 @@ export function AddBlockMenu({ labId }: { labId: string }) {
     };
 
     return (
-        <Menu shadow="md" position="bottom-end">
+        <Menu shadow="md" position="bottom-end" withinPortal>
             <Menu.Target>
                 <Button variant="light" size="xs" leftSection={<IconPlus size={14} />}>
                     {t('addBlock')}
@@ -63,13 +82,19 @@ export function AddBlockMenu({ labId }: { labId: string }) {
                 <Menu.Item leftSection={<IconTextSize size={16} />} onClick={addText}>
                     {t('blockText')}
                 </Menu.Item>
-                <Menu.Item leftSection={<IconPhoto size={16} />} onClick={() => void addImage()}>
+                <Menu.Item
+                    leftSection={<IconPhoto size={16} />}
+                    onClick={() => void addImage()}
+                >
                     {t('blockImage')}
                 </Menu.Item>
                 <Menu.Item leftSection={<IconCode size={16} />} onClick={addCode}>
                     {t('blockCode')}
                 </Menu.Item>
-                <Menu.Item leftSection={<IconMathFunction size={16} />} onClick={addMath}>
+                <Menu.Item
+                    leftSection={<IconMathFunction size={16} />}
+                    onClick={addMath}
+                >
                     {t('blockMath')}
                 </Menu.Item>
             </Menu.Dropdown>

@@ -100,14 +100,13 @@ Click **Add block** to insert one of four card types. Each card can be dragged t
 - `*bold*`, `_italic_`.
 - `` `inline code` `` for inline code.
 - `$x^2 + y^2 = r^2$` for inline math.
-- **Every line break becomes a new paragraph.** Each time you press Enter, Typst starts a new paragraph. Multiple consecutive blank lines are allowed and only add extra whitespace.
 - `#`, `[`, `]`, `@`, and `//` are escaped automatically, so you can type them safely.
 
 **Image card** — pick a screenshot, give it a **title** (required), and adjust the display width. The title is used as the figure caption.
 
 **Code card** — choose a language, paste your code, and give it a **title** (required). The title is used as the listing caption.
 
-**Formula card** — use https://typerino.com/ to compose the formula, paste it here. Give it a **title** (optional). If you set a title, the formula is numbered and can be referenced; if not, it renders as a plain block formula without a number.
+**Formula card** — use <https://typerino.com/> to compose the formula, paste it here. Every formula card is **automatically numbered** (`(1)`, `(2)`, …). Give it a **title** (optional) if you want to reference it from a text card; if left blank, the formula is still numbered but cannot be referenced.
 
 ### 7. Reference other cards
 
