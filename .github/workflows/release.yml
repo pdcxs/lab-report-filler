@@ -23,6 +23,11 @@ jobs:
             typst_asset: typst-aarch64-apple-darwin.tar.xz
             sidecar_name: typst-aarch64-apple-darwin
 
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            typst_asset: typst-x86_64-apple-darwin.tar.xz
+            sidecar_name: typst-x86_64-apple-darwin
+
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             # Linux 不使用 sidecar，typst 由用户自行安装
@@ -111,8 +116,9 @@ jobs:
             Download the installer for your platform:
 
             - **Windows**: `.msi` or `.exe` — no extra setup needed.
-            - **macOS (Apple Silicon)**: `aarch64.dmg` — no extra setup needed.
             - **Linux**: `.deb` or `.AppImage` — **Typst must be installed separately**:
+            - **macOS (Apple Silicon)**: `aarch64.dmg` — no extra setup needed.
+            - **macOS (Intel)**: `x64.dmg` — no extra setup needed.
               - Arch Linux: `sudo pacman -S typst`
               - Ubuntu / Debian: `sudo apt install typst` (or `cargo install typst-cli`)
               - Fedora: `sudo dnf install typst`
