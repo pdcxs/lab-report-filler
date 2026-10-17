@@ -173,15 +173,8 @@ pub fn generate_typst(
     data: StudentData,
 ) -> Result<GeneratedTypst, String> {
     let source = typst_gen::generate(&config, &data);
-    let file_name = if data.student_id.trim().is_empty() {
-        "report-draft.typ".to_string()
-    } else {
-        config
-            .storage
-            .generated_typst_name_pattern
-            .replace("{studentId}", &data.student_id)
-    };
-    let path = Path::new(&dir).join(&file_name);
+    // 固定写 report-draft.typ，避免因学号变化产生多个中间文件
+    let path = Path::new(&dir).join("report-draft.typ");
     fs::write(&path, &source).map_err(|e| e.to_string())?;
     Ok(GeneratedTypst {
         typst_path: path.to_string_lossy().to_string(),
