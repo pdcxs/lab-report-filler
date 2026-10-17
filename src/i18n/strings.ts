@@ -73,6 +73,8 @@ interface AppStrings {
     labMinCodeBlocks: string;
     labMinFigures: string;
     labMinTextBlocks: string;
+    optional: string;
+    ambiguousRefWarning: string;
 }
 
 export const strings: Record<Language, AppStrings> = {
@@ -149,6 +151,8 @@ export const strings: Record<Language, AppStrings> = {
         labMinCodeBlocks: 'Lab "{lab}": need at least {n} code block(s).',
         labMinFigures: 'Lab "{lab}": need at least {n} figure(s).',
         labMinTextBlocks: 'Lab "{lab}": need at least {n} text block(s).',
+        optional: 'optional',
+        ambiguousRefWarning: 'Multiple blocks share this title; use the Insert Reference button to disambiguate.',
     },
     zh: {
         openFolder: '打开目录',
@@ -223,6 +227,8 @@ export const strings: Record<Language, AppStrings> = {
         labMinCodeBlocks: '实验"{lab}"：至少需要 {n} 段代码。',
         labMinFigures: '实验"{lab}"：至少需要 {n} 张图片。',
         labMinTextBlocks: '实验"{lab}"：至少需要 {n} 个文本块。',
+        optional: '可选',
+        ambiguousRefWarning: '有多个同名 block，建议用"插入引用"按钮精确定位。',
     },
 };
 

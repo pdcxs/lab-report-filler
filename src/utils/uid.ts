@@ -1,4 +1,9 @@
+const CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
 export function newUid(): string {
-    const rand = Math.random().toString(36).slice(2, 10);
-    return `${Date.now().toString(36)}-${rand}`;
+    let s = '';
+    for (let i = 0; i < 16; i++) {
+        s += CHARS[Math.floor(Math.random() * CHARS.length)];
+    }
+    return s;
 }

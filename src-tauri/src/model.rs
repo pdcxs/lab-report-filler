@@ -144,18 +144,30 @@ pub enum Block {
 }
 
 impl Block {
-    /// 该 block 的 Typst label。文本 block 没有 label。
-    /// label 由类型前缀 + 标题 hash 生成，保证同一实验内唯一。
-    pub fn label(&self) -> Option<String> {
+    pub fn uid(&self) -> &str {
         match self {
-            Block::Text { .. } => None,
-            Block::Image { title, .. } => Some(format!("fig-{:08x}", fnv1a(title))),
-            Block::Code { title, .. } => Some(format!("code-{:08x}", fnv1a(title))),
-            Block::Math { title, .. } => Some(format!("eq-{:08x}", fnv1a(title))),
+            Block::Text { uid, .. } => uid,
+            Block::Image { uid, .. } => uid,
+            Block::Code { uid, .. } => uid,
+            Block::Math { uid, .. } => uid,
         }
     }
 
-    /// 学生填写的标题。文本 block 无标题。
+    pub fn label(&self) -> Option<String> {
+        match self {
+            Block::Text { .. } => None,
+            Block::Image { uid, .. } => Some(format!("fig-{:08x}", fnv1a(uid))),
+            Block::Code { uid, .. } => Some(format!("code-{:08x}", fnv1a(uid))),
+            Block::Math { uid, title, .. } => {
+                if title.trim().is_empty() {
+                    None
+                } else {
+                    Some(format!("eq-{:08x}", fnv1a(uid)))
+                }
+            }
+        }
+    }
+
     pub fn title(&self) -> Option<&str> {
         match self {
             Block::Text { .. } => None,

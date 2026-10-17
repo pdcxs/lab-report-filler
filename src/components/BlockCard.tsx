@@ -1,16 +1,20 @@
-import { ActionIcon, Group, Paper, Tooltip } from '@mantine/core';
-import { EMPTY_BLOCKS } from '../utils/constants';
+import { ActionIcon, Code, Group, Paper, Text, Tooltip } from '@mantine/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+    IconAlertTriangle,
+    IconGripVertical,
+    IconX,
+} from '@tabler/icons-react';
 import type { Block } from '../types/lab-config';
 import { useLabStore } from '../state/useLabStore';
 import { useT } from '../i18n/useT';
-import { collectRefs } from '../utils/block-utils';
+import { unreferencedBlocks } from '../utils/block-utils';
+import { EMPTY_BLOCKS } from '../utils/constants';
 import { TextBlock } from './blocks/TextBlock';
 import { ImageBlock } from './blocks/ImageBlock';
 import { CodeBlock } from './blocks/CodeBlock';
 import { MathBlock } from './blocks/MathBlock';
-import { IconGripVertical, IconX, IconAlertTriangle } from '@tabler/icons-react';
 
 export function BlockCard({ labId, block }: { labId: string; block: Block }) {
     const t = useT();
@@ -25,11 +29,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
         opacity: isDragging ? 0.5 : 1,
     };
 
-    // 未引用警告
-    const refs = collectRefs(blocks);
-    const hasTitle = block.type !== 'text' && block.title.trim() !== '';
-    const unreferenced =
-        block.type !== 'text' && hasTitle && !refs.has(block.title);
+    const unreferenced = unreferencedBlocks(blocks).some((b) => b.uid === block.uid);
 
     return (
         <Paper
@@ -40,7 +40,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
             bg={unreferenced ? 'yellow.0' : undefined}
         >
             <Group justify="space-between" mb="xs" wrap="nowrap">
-                <Group gap="xs" wrap="nowrap">
+                <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
                     <Tooltip label="Drag">
                         <ActionIcon
                             variant="subtle"
@@ -52,10 +52,21 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
                             <IconGripVertical size={16} />
                         </ActionIcon>
                     </Tooltip>
+                    {block.type !== 'text' && (
+                        <Code>{block.uid}</Code>
+                    )}
                     {unreferenced && (
-                        <Tooltip label={t('unreferencedWarning')}>
-                            <IconAlertTriangle size={16} color="orange" style={{ cursor: 'help' }} />
-                        </Tooltip>
+                        <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
+                            <IconAlertTriangle size={16} color="orange" />
+                            <Text
+                                size="xs"
+                                c="orange"
+                                lineClamp={1}
+                                title={t('unreferencedWarning')}
+                            >
+                                {t('unreferencedWarning')}
+                            </Text>
+                        </Group>
                     )}
                 </Group>
                 <ActionIcon

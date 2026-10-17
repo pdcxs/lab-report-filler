@@ -44,6 +44,8 @@ export function ExportBar() {
                 lines.push(`${labName}：${t('unreferencedWarning')} (${issue.label})`);
             else if (issue.kind === 'dangling_ref')
                 lines.push(`${labName}：${t('danglingRefWarning')} (${issue.label})`);
+            else if (issue.kind === 'ambiguous_ref')
+                lines.push(`${labName}：${t('ambiguousRefWarning')} (${issue.label})`);
         }
         return lines;
     };

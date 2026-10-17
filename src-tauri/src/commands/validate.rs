@@ -1,7 +1,7 @@
 use crate::model::{Block, LabConfig, StudentData};
 use regex::Regex;
 use serde::Serialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
 fn ref_bracket_re() -> &'static Regex {
@@ -28,23 +28,115 @@ fn count_text(blocks: &[Block]) -> usize {
         .count()
 }
 
-fn collect_refs(blocks: &[Block]) -> HashSet<String> {
-    let mut refs = HashSet::new();
+/// 从文本块里收集所有 `[[X]]`，映射到实际被引用的 block 的 uid
+fn referenced_uids(blocks: &[Block]) -> HashSet<String> {
+    let mut exact: HashMap<String, String> = HashMap::new();
+    let mut title_first: HashMap<String, String> = HashMap::new();
+    for b in blocks {
+        if let Some(title) = b.title() {
+            if title.trim().is_empty() {
+                continue;
+            }
+            exact.insert(format!("{}-{}", title, b.uid()), b.uid().to_string());
+            title_first
+                .entry(title.to_string())
+                .or_insert(b.uid().to_string());
+        }
+    }
+
+    let mut result = HashSet::new();
     for block in blocks {
         if let Block::Text { content, .. } = block {
             for cap in ref_bracket_re().captures_iter(content) {
-                refs.insert(cap[1].to_string());
+                let x = &cap[1];
+                if let Some(uid) = exact.get(x) {
+                    result.insert(uid.clone());
+                } else if let Some(uid) = title_first.get(x) {
+                    result.insert(uid.clone());
+                }
             }
         }
     }
-    refs
+    result
 }
 
-fn collect_titles(blocks: &[Block]) -> HashSet<String> {
+/// 有 title 但未被任何引用覆盖的 block
+fn unreferenced_titles(blocks: &[Block]) -> Vec<String> {
+    let refs = referenced_uids(blocks);
     blocks
         .iter()
-        .filter_map(|b| b.title().map(|s| s.to_string()))
+        .filter_map(|b| {
+            if let Some(title) = b.title() {
+                if !title.trim().is_empty() && !refs.contains(b.uid()) {
+                    Some(title.to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
         .collect()
+}
+
+/// 引用了不存在的 title（含 title-uid 形式）
+fn dangling_titles(blocks: &[Block]) -> Vec<String> {
+    let mut titles: HashSet<String> = HashSet::new();
+    let mut exact: HashSet<String> = HashSet::new();
+    for b in blocks {
+        if let Some(t) = b.title() {
+            if t.trim().is_empty() {
+                continue;
+            }
+            titles.insert(t.to_string());
+            exact.insert(format!("{}-{}", t, b.uid()));
+        }
+    }
+
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut result: Vec<String> = Vec::new();
+    for block in blocks {
+        if let Block::Text { content, .. } = block {
+            for cap in ref_bracket_re().captures_iter(content) {
+                let x = cap[1].to_string();
+                if !titles.contains(&x) && !exact.contains(&x) && seen.insert(x.clone()) {
+                    result.push(x);
+                }
+            }
+        }
+    }
+    result
+}
+
+/// 同名 block 被 `[[title]]` 引用（歧义）
+fn ambiguous_titles(blocks: &[Block]) -> Vec<String> {
+    let mut title_counts: HashMap<String, usize> = HashMap::new();
+    let mut exact_keys: HashSet<String> = HashSet::new();
+    for b in blocks {
+        if let Some(t) = b.title() {
+            if t.trim().is_empty() {
+                continue;
+            }
+            *title_counts.entry(t.to_string()).or_insert(0) += 1;
+            exact_keys.insert(format!("{}-{}", t, b.uid()));
+        }
+    }
+
+    let mut result: HashSet<String> = HashSet::new();
+    for block in blocks {
+        if let Block::Text { content, .. } = block {
+            for cap in ref_bracket_re().captures_iter(content) {
+                let x = cap[1].to_string();
+                if exact_keys.contains(&x) {
+                    continue;
+                }
+                if title_counts.get(&x).copied().unwrap_or(0) > 1 {
+                    result.insert(x);
+                }
+            }
+        }
+    }
+    result.into_iter().collect()
 }
 
 fn prose_chars(blocks: &[Block]) -> usize {
@@ -105,11 +197,7 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
         let blocks = data.records.get(&exp.id).unwrap_or(&empty);
         let rules = &exp.validation;
 
-        let code_count = count_code(blocks);
-        let figure_count = count_figures(blocks);
-        let text_count = count_text(blocks);
-
-        if code_count < rules.min_code_blocks {
+        if count_code(blocks) < rules.min_code_blocks {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
                 kind: "min_code_blocks".into(),
@@ -117,7 +205,7 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
                 label: None,
             });
         }
-        if figure_count < rules.min_figures {
+        if count_figures(blocks) < rules.min_figures {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
                 kind: "min_figures".into(),
@@ -125,7 +213,7 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
                 label: None,
             });
         }
-        if text_count < rules.min_text_blocks {
+        if count_text(blocks) < rules.min_text_blocks {
             issues.push(ValidationIssue {
                 lab_id: exp.id.clone(),
                 kind: "min_text_blocks".into(),
@@ -142,33 +230,33 @@ pub fn validate_report(config: LabConfig, data: StudentData) -> Result<Validatio
             });
         }
 
-        // 引用检查（可选）
         if rules.require_all_referenced {
-            let refs = collect_refs(blocks);
-            for title in collect_titles(blocks) {
-                if !refs.contains(&title) {
-                    issues.push(ValidationIssue {
-                        lab_id: exp.id.clone(),
-                        kind: "unreferenced".into(),
-                        extra: None,
-                        label: Some(title),
-                    });
-                }
+            for title in unreferenced_titles(blocks) {
+                issues.push(ValidationIssue {
+                    lab_id: exp.id.clone(),
+                    kind: "unreferenced".into(),
+                    extra: None,
+                    label: Some(title),
+                });
             }
         }
 
-        // 引用了不存在的标题 → 总是检查
-        let refs = collect_refs(blocks);
-        let titles = collect_titles(blocks);
-        for r in &refs {
-            if !titles.contains(r) {
-                issues.push(ValidationIssue {
-                    lab_id: exp.id.clone(),
-                    kind: "dangling_ref".into(),
-                    extra: None,
-                    label: Some(r.clone()),
-                });
-            }
+        for title in ambiguous_titles(blocks) {
+            issues.push(ValidationIssue {
+                lab_id: exp.id.clone(),
+                kind: "ambiguous_ref".into(),
+                extra: None,
+                label: Some(title),
+            });
+        }
+
+        for title in dangling_titles(blocks) {
+            issues.push(ValidationIssue {
+                lab_id: exp.id.clone(),
+                kind: "dangling_ref".into(),
+                extra: None,
+                label: Some(title),
+            });
         }
     }
 

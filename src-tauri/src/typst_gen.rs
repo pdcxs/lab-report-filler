@@ -31,35 +31,139 @@ fn replace_simple(
         .replace("{{dateLine}}", date_line)
 }
 
+fn find_closing_brackets(chars: &[char], start: usize) -> Option<usize> {
+    let mut i = start;
+    while i + 1 < chars.len() {
+        if chars[i] == ']' && chars[i + 1] == ']' {
+            return Some(i);
+        }
+        i += 1;
+    }
+    None
+}
+
+fn strip_math_delims(s: &str) -> String {
+    let t = s.trim();
+    let t = t.strip_prefix('$').unwrap_or(t);
+    let t = t.strip_suffix('$').unwrap_or(t);
+    t.trim().to_string()
+}
+
 // =====================================================================
-// 文本块处理
+// Block 渲染
 // =====================================================================
 
-/// 处理文本块：
-/// - `[[title]]` → `@label`（title 有效时），否则转义为 `\[\[title\]\]`
-/// - 转义 `\` `#` `[` `]` `//` `@`（无效 @ 时）
-/// - 每个 `\n` → `\n\n`
+fn render_blocks(blocks: &[Block]) -> String {
+    // title-uid 精确 → 唯一 block；title → 可能多个
+    // [[X]] 解析：优先精确匹配 title-uid，否则 title 匹配第一个
+    let mut exact_map: HashMap<String, String> = HashMap::new();
+    let mut title_map: HashMap<String, Vec<String>> = HashMap::new();
+    for b in blocks {
+        if let (Some(title), Some(label)) = (b.title(), b.label()) {
+            let key = format!("{}-{}", title, b.uid());
+            exact_map.insert(key, label.clone());
+            title_map
+                .entry(title.to_string())
+                .or_default()
+                .push(label.clone());
+        }
+    }
+
+    let mut title_to_label: HashMap<String, String> = HashMap::new();
+    for (t, labels) in &title_map {
+        if let Some(first) = labels.first() {
+            title_to_label.insert(t.clone(), first.clone());
+        }
+    }
+
+    let mut out = String::new();
+    for block in blocks {
+        match block {
+            Block::Text { content, .. } => {
+                let processed = process_text(content, &exact_map, &title_to_label);
+                out.push('\n');
+                out.push_str(&processed);
+                out.push('\n');
+            }
+            Block::Image {
+                uid,
+                title,
+                relative_path,
+                width,
+                ..
+            } => {
+                let label = format!("fig-{:08x}", fnv1a(uid));
+                out.push_str(&format!(
+                    "\n#figure(\n  image(\"{}\", width: {}%),\n  caption: \"{}\",\n) <{}>\n",
+                    relative_path,
+                    width,
+                    escape_str(title),
+                    label
+                ));
+            }
+            Block::Code {
+                uid,
+                title,
+                language,
+                code,
+                ..
+            } => {
+                let label = format!("code-{:08x}", fnv1a(uid));
+                out.push_str(&format!(
+                    "\n#figure(\n  caption: \"{}\",\n)[\n```{}\n{}\n```\n] <{}>\n",
+                    escape_str(title),
+                    language,
+                    code.trim_end(),
+                    label
+                ));
+            }
+            Block::Math {
+                uid,
+                title,
+                formula,
+                ..
+            } => {
+                let f = strip_math_delims(formula);
+                if title.trim().is_empty() {
+                    out.push_str(&format!("\n$ {} $\n", f));
+                } else {
+                    let label = format!("eq-{:08x}", fnv1a(uid));
+                    out.push_str(&format!("\n$ {} $ <{}>\n", f, label));
+                }
+            }
+        }
+    }
+    out
+}
+
 fn process_text(
     content: &str,
-    title_to_label: &HashMap<String, String>,
-    valid_labels: &HashSet<String>,
+    exact_map: &HashMap<String, String>,
+    title_map: &HashMap<String, String>,
 ) -> String {
     let mut out = String::new();
     let chars: Vec<char> = content.chars().collect();
     let mut i = 0;
 
     while i < chars.len() {
-        // 优先匹配 [[title]]
         if i + 1 < chars.len() && chars[i] == '[' && chars[i + 1] == '[' {
             if let Some(end) = find_closing_brackets(&chars, i + 2) {
-                let title: String = chars[i + 2..end].iter().collect();
-                if let Some(label) = title_to_label.get(&title) {
+                let x: String = chars[i + 2..end].iter().collect();
+                // 优先精确 title-uid
+                if let Some(label) = exact_map.get(&x) {
                     out.push('@');
                     out.push_str(label);
                     i = end + 2;
                     continue;
                 }
-                // title 无效：按字面量输出（转义）
+                // 再 title
+                if let Some(label) = title_map.get(&x) {
+                    out.push('@');
+                    out.push_str(label);
+                    i = end + 2;
+                    continue;
+                }
+                // 无效引用 → 按字面量
                 out.push_str("\\[\\[");
                 i += 2;
                 continue;
@@ -96,7 +200,9 @@ fn process_text(
                     j += 1;
                 }
                 let label: String = chars[i + 1..j].iter().collect();
-                if valid_labels.contains(&label) {
+                let valid: HashSet<&String> =
+                    exact_map.values().chain(title_map.values()).collect();
+                if valid.contains(&label) {
                     out.push('@');
                     out.push_str(&label);
                 } else {
@@ -116,90 +222,6 @@ fn process_text(
         }
     }
 
-    out
-}
-
-fn find_closing_brackets(chars: &[char], start: usize) -> Option<usize> {
-    let mut i = start;
-    while i + 1 < chars.len() {
-        if chars[i] == ']' && chars[i + 1] == ']' {
-            return Some(i);
-        }
-        i += 1;
-    }
-    None
-}
-
-fn strip_math_delims(s: &str) -> String {
-    let t = s.trim();
-    let t = t.strip_prefix('$').unwrap_or(t);
-    let t = t.strip_suffix('$').unwrap_or(t);
-    t.trim().to_string()
-}
-
-// =====================================================================
-// Block 渲染
-// =====================================================================
-
-fn render_blocks(blocks: &[Block]) -> String {
-    let title_to_label: HashMap<String, String> = blocks
-        .iter()
-        .filter_map(|b| b.title().map(|t| t.to_string()).zip(b.label()))
-        .collect();
-    let valid_labels: HashSet<String> = title_to_label.values().cloned().collect();
-
-    let mut out = String::new();
-    for block in blocks {
-        match block {
-            Block::Text { content, .. } => {
-                let processed = process_text(content, &title_to_label, &valid_labels);
-                out.push('\n');
-                out.push_str(&processed);
-                out.push('\n');
-            }
-            Block::Image {
-                title,
-                relative_path,
-                width,
-                ..
-            } => {
-                let label = format!("fig-{:08x}", fnv1a(title));
-                out.push_str(&format!(
-                    "\n#figure(\n  image(\"{}\", width: {}%),\n  caption: \"{}\",\n) <{}>\n",
-                    relative_path,
-                    width,
-                    escape_str(title),
-                    label
-                ));
-            }
-            Block::Code {
-                title,
-                language,
-                code,
-                ..
-            } => {
-                let label = format!("code-{:08x}", fnv1a(title));
-                out.push_str(&format!(
-                    "\n#figure(\n  caption: \"{}\",\n)[\n```{}\n{}\n```\n] <{}>\n",
-                    escape_str(title),
-                    language,
-                    code.trim_end(),
-                    label
-                ));
-            }
-            Block::Math { title, formula, .. } => {
-                let f = strip_math_delims(formula);
-                if title.trim().is_empty() {
-                    // 无 label：普通块公式，Typography 会自动居中
-                    out.push_str(&format!("\n$ {} $\n", f));
-                } else {
-                    // 有 label：加编号锚点，供 @eq-xxx 引用
-                    let label = format!("eq-{:08x}", fnv1a(title));
-                    out.push_str(&format!("\n$ {} $ <{}>\n", f, label));
-                }
-            }
-        }
-    }
     out
 }
 

@@ -100,17 +100,24 @@ Click **Add block** to insert one of four card types. Each card can be dragged t
 - `*bold*`, `_italic_`.
 - `` `inline code` `` for inline code.
 - `$x^2 + y^2 = r^2$` for inline math.
-- `[[Title]]` to reference another card (see below). `#`, `[`, `]`, `@`, and `//` are escaped automatically, so you can type them safely.
+- **Every line break becomes a new paragraph.** Each time you press Enter, Typst starts a new paragraph. Multiple consecutive blank lines are allowed and only add extra whitespace.
+- `#`, `[`, `]`, `@`, and `//` are escaped automatically, so you can type them safely.
 
-**Image card** — pick a screenshot, give it a **title** (required, must be unique within this experiment), and adjust the display width. The title is used as the figure caption.
+**Image card** — pick a screenshot, give it a **title** (required), and adjust the display width. The title is used as the figure caption.
 
-**Code card** — choose a language, paste your code, and give it a **title** (required, must be unique). The title is used as the listing caption.
+**Code card** — choose a language, paste your code, and give it a **title** (required). The title is used as the listing caption.
 
 **Formula card** — use https://typerino.com/ to compose the formula, paste it here. Give it a **title** (optional). If you set a title, the formula is numbered and can be referenced; if not, it renders as a plain block formula without a number.
 
 ### 7. Reference other cards
 
-Every image, code, and formula card with a title can be referenced from a text card. In a text card, click **Insert Reference** and pick a title. The app inserts `[[Title]]` at the cursor, which will render as `@label` in the PDF and create a clickable "Figure 1" / "Listing 1" / "(1)" reference.
+Every image, code, and formula card with a title can be referenced from a text card using the syntax `[[Title]]`:
+
+- `[[Title]]` references the **first** card with that title in this experiment.
+- `[[Title-uid]]` references a **specific** card. The `uid` is the short 16-character code shown on the card (for example `abc123xyz456def0`).
+- **If you have multiple cards with the same title**, `[[Title]]` will be flagged as ambiguous. Use the **Insert Reference** button in a text card — it automatically inserts `[[Title-uid]]`, which always points to the correct card.
+
+The easiest way to reference a card is to click **Insert Reference** in a text card and pick the title from the menu. The app inserts the precise `[[Title-uid]]` form at the cursor. In the generated PDF, both forms render as a clickable "Figure 1", "Listing 1", or "(1)".
 
 **You should reference every image, code, and formula you insert.** Unreferenced cards are highlighted in yellow, and export will be blocked if your instructor enabled that check.
 
@@ -172,7 +179,7 @@ Click **+ Add Experiment** to add experiments. For each experiment:
 - **Validation rules**:
   - Minimum number of code cards, image cards, and text cards.
   - Minimum number of prose characters (sum across all text cards).
-  - Whether every image/code/formula card must be referenced from a text card via `[[Title]]`.
+  - Whether every image/code/formula card must be referenced from a text card via `[[Title]]` or `[[Title-uid]]`.
 
 Drag experiments in the left panel to reorder them.
 

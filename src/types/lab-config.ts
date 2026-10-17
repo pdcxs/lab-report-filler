@@ -144,7 +144,8 @@ export interface ValidationIssue {
     | 'min_text_blocks'
     | 'prose'
     | 'unreferenced'
-    | 'dangling_ref';
+    | 'dangling_ref'
+    | 'ambiguous_ref';
     extra?: number;
     label?: string;
 }

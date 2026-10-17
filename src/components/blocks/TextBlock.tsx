@@ -1,15 +1,30 @@
-import { Button, Menu, Stack, Textarea } from '@mantine/core';
+import {
+    Alert,
+    Button,
+    Code,
+    Menu,
+    Stack,
+    Text,
+    Textarea,
+} from '@mantine/core';
 import { useRef } from 'react';
+import {
+    IconAlertTriangle,
+    IconCode,
+    IconMathFunction,
+    IconPhoto,
+} from '@tabler/icons-react';
 import type { Block } from '../../types/lab-config';
 import { useT } from '../../i18n/useT';
 import { useLabStore } from '../../state/useLabStore';
 import { EMPTY_BLOCKS } from '../../utils/constants';
-import { IconCode, IconMathFunction, IconPhoto } from '@tabler/icons-react';
+import { ambiguousRefsInText, exactRefText } from '../../utils/block-utils';
 
 type TitledBlock = Extract<Block, { type: 'image' | 'code' | 'math' }>;
 
 function hasTitle(b: Block): b is TitledBlock {
-    return b.type !== 'text' && b.title.trim() !== '';
+    if (b.type === 'text') return false;
+    return b.title.trim() !== '';
 }
 
 export function TextBlock({
@@ -24,8 +39,8 @@ export function TextBlock({
     const blocks = useLabStore((s) => s.student.records[labId] ?? EMPTY_BLOCKS);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // 当前实验里所有可引用的项（按 blocks 顺序）
     const referenceables = blocks.filter(hasTitle);
+    const ambiguous = ambiguousRefsInText(block.content, blocks);
 
     const insertAtCursor = (text: string) => {
         const el = textareaRef.current;
@@ -63,6 +78,25 @@ export function TextBlock({
                 styles={{ input: { fontSize: 13, lineHeight: 1.6 } }}
             />
 
+            {ambiguous.length > 0 && (
+                <Alert
+                    color="orange"
+                    variant="light"
+                    icon={<IconAlertTriangle size={16} />}
+                    p="xs"
+                >
+                    <Text size="xs">
+                        {t('ambiguousRefWarning')}{' '}
+                        {ambiguous.map((title, i) => (
+                            <span key={title}>
+                                <Code>{`[[${title}]]`}</Code>
+                                {i < ambiguous.length - 1 ? ', ' : ''}
+                            </span>
+                        ))}
+                    </Text>
+                </Alert>
+            )}
+
             <Menu shadow="md" position="bottom-start" withinPortal>
                 <Menu.Target>
                     <Button
@@ -77,12 +111,17 @@ export function TextBlock({
                 <Menu.Dropdown>
                     {referenceables.map((b) => {
                         const Icon =
-                            b.type === 'image' ? IconPhoto : b.type === 'code' ? IconCode : IconMathFunction;
+                            b.type === 'image'
+                                ? IconPhoto
+                                : b.type === 'code'
+                                    ? IconCode
+                                    : IconMathFunction;
+                        const refText = exactRefText(b);
                         return (
                             <Menu.Item
                                 key={b.uid}
                                 leftSection={<Icon size={16} />}
-                                onClick={() => insertAtCursor(`[[${b.title}]]`)}
+                                onClick={() => refText && insertAtCursor(`[[${refText}]]`)}
                             >
                                 {b.title}
                             </Menu.Item>
