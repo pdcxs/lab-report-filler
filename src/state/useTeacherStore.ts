@@ -23,7 +23,6 @@ function defaultTypst(): TypstConfig {
             '#import "utils/utils.typ": cover',
             '#import "@preview/codly:2.0.0" as codly',
             '#show raw.where(block: true): codly.new',
-            '#show: codly-init',
             '#set math.equation(numbering: "(1)")',
             '#set page(',
             '  margin: (top: 2.54cm, bottom: 2.54cm, left: 3.18cm, right: 3.18cm),',

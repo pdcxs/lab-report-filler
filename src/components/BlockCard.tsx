@@ -15,6 +15,7 @@ import { TextBlock } from './blocks/TextBlock';
 import { ImageBlock } from './blocks/ImageBlock';
 import { CodeBlock } from './blocks/CodeBlock';
 import { MathBlock } from './blocks/MathBlock';
+import { HeadingBlock } from './blocks/HeadingBlock';
 
 export function BlockCard({ labId, block }: { labId: string; block: Block }) {
     const t = useT();
@@ -30,6 +31,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
     };
 
     const unreferenced = unreferencedBlocks(blocks).some((b) => b.uid === block.uid);
+    const showUid = block.type !== 'text' && block.type !== 'heading';
 
     return (
         <Paper
@@ -52,9 +54,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
                             <IconGripVertical size={16} />
                         </ActionIcon>
                     </Tooltip>
-                    {block.type !== 'text' && (
-                        <Code>{block.uid}</Code>
-                    )}
+                    {showUid && <Code>{block.uid}</Code>}
                     {unreferenced && (
                         <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
                             <IconAlertTriangle size={16} color="orange" />
@@ -84,6 +84,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
             {block.type === 'image' && <ImageBlock labId={labId} block={block} />}
             {block.type === 'code' && <CodeBlock labId={labId} block={block} />}
             {block.type === 'math' && <MathBlock labId={labId} block={block} />}
+            {block.type === 'heading' && <HeadingBlock labId={labId} block={block} />}
         </Paper>
     );
 }

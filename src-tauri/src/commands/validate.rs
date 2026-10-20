@@ -46,7 +46,12 @@ fn referenced_uids(blocks: &[Block]) -> HashSet<String> {
 
     let mut result = HashSet::new();
     for block in blocks {
-        if let Block::Text { content, .. } = block {
+        if let Block::Text {
+            content,
+            raw: false,
+            ..
+        } = block
+        {
             for cap in ref_bracket_re().captures_iter(content) {
                 let x = &cap[1];
                 if let Some(uid) = exact.get(x) {
@@ -96,7 +101,12 @@ fn dangling_titles(blocks: &[Block]) -> Vec<String> {
     let mut seen: HashSet<String> = HashSet::new();
     let mut result: Vec<String> = Vec::new();
     for block in blocks {
-        if let Block::Text { content, .. } = block {
+        if let Block::Text {
+            content,
+            raw: false,
+            ..
+        } = block
+        {
             for cap in ref_bracket_re().captures_iter(content) {
                 let x = cap[1].to_string();
                 if !titles.contains(&x) && !exact.contains(&x) && seen.insert(x.clone()) {
@@ -124,7 +134,12 @@ fn ambiguous_titles(blocks: &[Block]) -> Vec<String> {
 
     let mut result: HashSet<String> = HashSet::new();
     for block in blocks {
-        if let Block::Text { content, .. } = block {
+        if let Block::Text {
+            content,
+            raw: false,
+            ..
+        } = block
+        {
             for cap in ref_bracket_re().captures_iter(content) {
                 let x = cap[1].to_string();
                 if exact_keys.contains(&x) {

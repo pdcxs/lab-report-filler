@@ -86,22 +86,29 @@ export interface LabConfig {
 // =====================================================================
 
 export type Block =
-    | { type: 'text'; uid: string; content: string }
-    | {
-        type: 'image';
-        uid: string;
-        title: string;
-        relativePath: string;
-        width: number;
+  | { type: 'text'; uid: string; content: string; raw: boolean }
+  | {
+      type: 'image';
+      uid: string;
+      title: string;
+      relativePath: string;
+      width: number;
     }
-    | {
-        type: 'code';
-        uid: string;
-        title: string;
-        language: string;
-        code: string;
+  | {
+      type: 'code';
+      uid: string;
+      title: string;
+      language: string;
+      code: string;
     }
-    | { type: 'math'; uid: string; title: string; formula: string };
+  | {
+      type: 'math';
+      uid: string;
+      title: string;
+      formula: string;
+      format: 'typst' | 'latex';
+    }
+  | { type: 'heading'; uid: string; level: number; content: string };
 
 export interface StudentData {
     name: string;

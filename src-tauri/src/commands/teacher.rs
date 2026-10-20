@@ -141,6 +141,7 @@ pub async fn preview_teacher_config(
             vec![Block::Text {
                 uid: format!("preview-{}", exp.id),
                 content: format!("（学生 {} 的实验记录会显示在这里）", exp.name),
+                raw: false,
             }],
         );
     }

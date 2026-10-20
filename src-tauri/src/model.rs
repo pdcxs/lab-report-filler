@@ -120,7 +120,12 @@ pub struct ValidationRules {
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum Block {
     #[serde(rename_all = "camelCase")]
-    Text { uid: String, content: String },
+    Text {
+        uid: String,
+        content: String,
+        #[serde(default)]
+        raw: bool,
+    },
     #[serde(rename_all = "camelCase")]
     Image {
         uid: String,
@@ -140,7 +145,19 @@ pub enum Block {
         uid: String,
         title: String,
         formula: String,
+        #[serde(default = "default_math_format")]
+        format: String,
     },
+    #[serde(rename_all = "camelCase")]
+    Heading {
+        uid: String,
+        level: u8,
+        content: String,
+    },
+}
+
+fn default_math_format() -> String {
+    "typst".to_string()
 }
 
 impl Block {
@@ -150,12 +167,13 @@ impl Block {
             Block::Image { uid, .. } => uid,
             Block::Code { uid, .. } => uid,
             Block::Math { uid, .. } => uid,
+            Block::Heading { uid, .. } => uid,
         }
     }
 
     pub fn label(&self) -> Option<String> {
         match self {
-            Block::Text { .. } => None,
+            Block::Text { .. } | Block::Heading { .. } => None,
             Block::Image { uid, .. } => Some(format!("fig-{:08x}", fnv1a(uid))),
             Block::Code { uid, .. } => Some(format!("code-{:08x}", fnv1a(uid))),
             Block::Math { uid, title, .. } => {
@@ -170,7 +188,7 @@ impl Block {
 
     pub fn title(&self) -> Option<&str> {
         match self {
-            Block::Text { .. } => None,
+            Block::Text { .. } | Block::Heading { .. } => None,
             Block::Image { title, .. } => Some(title),
             Block::Code { title, .. } => Some(title),
             Block::Math { title, .. } => Some(title),

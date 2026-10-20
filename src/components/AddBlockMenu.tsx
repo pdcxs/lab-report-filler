@@ -3,6 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { open as openFile } from '@tauri-apps/plugin-dialog';
 import {
     IconCode,
+    IconH1,
     IconMathFunction,
     IconPhoto,
     IconPlus,
@@ -32,7 +33,10 @@ export function AddBlockMenu({
     };
 
     const addText = () =>
-        insert({ type: 'text', uid: newUid(), content: '' });
+        insert({ type: 'text', uid: newUid(), content: '', raw: false });
+
+    const addHeading = () =>
+        insert({ type: 'heading', uid: newUid(), level: 1, content: '' });
 
     const addCode = () =>
         insert({
@@ -44,7 +48,13 @@ export function AddBlockMenu({
         });
 
     const addMath = () =>
-        insert({ type: 'math', uid: newUid(), title: '', formula: '' });
+        insert({
+            type: 'math',
+            uid: newUid(),
+            title: '',
+            formula: '',
+            format: 'typst',
+        });
 
     const addImage = async () => {
         const selected = await openFile({
@@ -81,6 +91,9 @@ export function AddBlockMenu({
             <Menu.Dropdown>
                 <Menu.Item leftSection={<IconTextSize size={16} />} onClick={addText}>
                     {t('blockText')}
+                </Menu.Item>
+                <Menu.Item leftSection={<IconH1 size={16} />} onClick={addHeading}>
+                    {t('blockHeading')}
                 </Menu.Item>
                 <Menu.Item
                     leftSection={<IconPhoto size={16} />}

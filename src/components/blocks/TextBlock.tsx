@@ -4,6 +4,7 @@ import {
     Code,
     Menu,
     Stack,
+    Switch,
     Text,
     Textarea,
 } from '@mantine/core';
@@ -23,7 +24,7 @@ import { ambiguousRefsInText, exactRefText } from '../../utils/block-utils';
 type TitledBlock = Extract<Block, { type: 'image' | 'code' | 'math' }>;
 
 function hasTitle(b: Block): b is TitledBlock {
-    if (b.type === 'text') return false;
+    if (b.type !== 'image' && b.type !== 'code' && b.type !== 'math') return false;
     return b.title.trim() !== '';
 }
 
@@ -40,7 +41,7 @@ export function TextBlock({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const referenceables = blocks.filter(hasTitle);
-    const ambiguous = ambiguousRefsInText(block.content, blocks);
+    const ambiguous = block.raw ? [] : ambiguousRefsInText(block.content, blocks);
 
     const insertAtCursor = (text: string) => {
         const el = textareaRef.current;
@@ -63,6 +64,17 @@ export function TextBlock({
 
     return (
         <Stack gap="xs">
+            <Switch
+                label={t('textRawMode')}
+                description={t('textRawModeHint')}
+                checked={block.raw}
+                onChange={(e) =>
+                    updateBlock(labId, block.uid, {
+                        raw: e.currentTarget.checked,
+                    } as Partial<Block>)
+                }
+            />
+
             <Textarea
                 ref={textareaRef}
                 autosize
@@ -74,7 +86,7 @@ export function TextBlock({
                         content: e.currentTarget.value,
                     } as Partial<Block>)
                 }
-                placeholder={t('blockTextHint')}
+                placeholder={block.raw ? t('textRawPlaceholder') : t('blockTextHint')}
                 styles={{ input: { fontSize: 13, lineHeight: 1.6 } }}
             />
 
@@ -97,38 +109,40 @@ export function TextBlock({
                 </Alert>
             )}
 
-            <Menu shadow="md" position="bottom-start" withinPortal>
-                <Menu.Target>
-                    <Button
-                        variant="light"
-                        size="xs"
-                        disabled={referenceables.length === 0}
-                        style={{ alignSelf: 'flex-start' }}
-                    >
-                        {t('insertReference')}
-                    </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                    {referenceables.map((b) => {
-                        const Icon =
-                            b.type === 'image'
-                                ? IconPhoto
-                                : b.type === 'code'
-                                    ? IconCode
-                                    : IconMathFunction;
-                        const refText = exactRefText(b);
-                        return (
-                            <Menu.Item
-                                key={b.uid}
-                                leftSection={<Icon size={16} />}
-                                onClick={() => refText && insertAtCursor(`[[${refText}]]`)}
-                            >
-                                {b.title}
-                            </Menu.Item>
-                        );
-                    })}
-                </Menu.Dropdown>
-            </Menu>
+            {!block.raw && (
+                <Menu shadow="md" position="bottom-start" withinPortal>
+                    <Menu.Target>
+                        <Button
+                            variant="light"
+                            size="xs"
+                            disabled={referenceables.length === 0}
+                            style={{ alignSelf: 'flex-start' }}
+                        >
+                            {t('insertReference')}
+                        </Button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                        {referenceables.map((b) => {
+                            const Icon =
+                                b.type === 'image'
+                                    ? IconPhoto
+                                    : b.type === 'code'
+                                        ? IconCode
+                                        : IconMathFunction;
+                            const refText = exactRefText(b);
+                            return (
+                                <Menu.Item
+                                    key={b.uid}
+                                    leftSection={<Icon size={16} />}
+                                    onClick={() => refText && insertAtCursor(`[[${refText}]]`)}
+                                >
+                                    {b.title}
+                                </Menu.Item>
+                            );
+                        })}
+                    </Menu.Dropdown>
+                </Menu>
+            )}
         </Stack>
     );
 }

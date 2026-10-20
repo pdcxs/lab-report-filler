@@ -75,6 +75,20 @@ interface AppStrings {
     labMinTextBlocks: string;
     optional: string;
     ambiguousRefWarning: string;
+    textRawMode: string;
+    textRawModeHint: string;
+    textRawPlaceholder: string;
+    formulaFormat: string;
+    blockFormulaHintLatex: string;
+    blockHeading: string;
+    headingLevel: string;
+    headingLevel1: string;
+    headingLevel2: string;
+    headingLevel3: string;
+    headingLevel4: string;
+    headingLevel5: string;
+    headingLevel6: string;
+    headingContent: string;
 }
 
 export const strings: Record<Language, AppStrings> = {
@@ -153,6 +167,20 @@ export const strings: Record<Language, AppStrings> = {
         labMinTextBlocks: 'Lab "{lab}": need at least {n} text block(s).',
         optional: 'optional',
         ambiguousRefWarning: 'Multiple blocks share this title; use the Insert Reference button to disambiguate.',
+        textRawMode: 'Raw Typst source (no escaping)',
+        textRawModeHint: 'Turn on to write raw Typst. The text is inserted as-is: no escaping, no [[Title]] references.',
+        textRawPlaceholder: 'Write raw Typst source here...',
+        formulaFormat: 'Format',
+        blockFormulaHintLatex: 'LaTeX formula, converted via mitex. Example: \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}',
+        blockHeading: 'Heading',
+        headingLevel: 'Heading level',
+        headingLevel1: "Heading 1",
+        headingLevel2: "Heading 2",
+        headingLevel3: "Heading 3",
+        headingLevel4: "Heading 4",
+        headingLevel5: "Heading 5",
+        headingLevel6: "Heading 6",
+        headingContent: 'Heading text',
     },
     zh: {
         openFolder: '打开目录',
@@ -229,6 +257,20 @@ export const strings: Record<Language, AppStrings> = {
         labMinTextBlocks: '实验"{lab}"：至少需要 {n} 个文本块。',
         optional: '可选',
         ambiguousRefWarning: '有多个同名 block，建议用"插入引用"按钮精确定位。',
+        textRawMode: 'Typst 源代码（不做转义）',
+        textRawModeHint: '打开后文本原样写入，不做转义，也不会处理 [[标题]] 引用。',
+        textRawPlaceholder: '在此输入 Typst 源代码……',
+        formulaFormat: '格式',
+        blockFormulaHintLatex: 'LaTeX 公式，通过 mitex 转换。例如：\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}',
+        blockHeading: '标题',
+        headingLevel: '标题级别',
+        headingLevel1: "一级标题",
+        headingLevel2: "二级标题",
+        headingLevel3: "三级标题",
+        headingLevel4: "四级标题",
+        headingLevel5: "五级标题",
+        headingLevel6: "六级标题",
+        headingContent: '标题内容',
     },
 };
 
