@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import type {
+    CodeLanguage,
     CourseConfig,
     Experiment,
     LabConfig,
@@ -194,17 +195,21 @@ function emptyConfig(lang: 'zh' | 'en' = 'zh'): LabConfig {
         },
         typst: defaultTypst(),
         experiments: [],
-        codeLanguages: [
-            'java',
-            'python',
-            'c',
-            'cpp',
-            'csharp',
-            'javascript',
-            'typescript',
-            'text',
-        ],
+        codeLanguages: defaultCodeLanguages(),
     };
+}
+
+function defaultCodeLanguages(): CodeLanguage[] {
+    return [
+        { name: 'java' },
+        { name: 'python' },
+        { name: 'c' },
+        { name: 'cpp' },
+        { name: 'csharp' },
+        { name: 'javascript' },
+        { name: 'typescript' },
+        { name: 'text' },
+    ];
 }
 
 // =====================================================================
@@ -224,7 +229,7 @@ interface TeacherState {
     updateStudentId: (patch: Partial<StudentIdConfig>) => void;
     updateClassName: (patch: Partial<SimpleFieldConfig>) => void;
     updateLocation: (patch: Partial<SimpleFieldConfig>) => void;
-    setCodeLanguages: (langs: string[]) => void;
+    setCodeLanguages: (langs: CodeLanguage[]) => void;
     updateExperiment: (idx: number, patch: Partial<Experiment>) => void;
     addExperiment: () => void;
     removeExperiment: (idx: number) => void;

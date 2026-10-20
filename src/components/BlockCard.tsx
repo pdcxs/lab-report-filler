@@ -87,7 +87,7 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
         useSortable({ id: block.uid });
 
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState<boolean>(block.collapsed ?? false);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -157,15 +157,28 @@ export function BlockCard({ labId, block }: { labId: string; block: Block }) {
                 </Group>
             </Group>
 
-            {!collapsed && (
-                <Box>
+            <Box
+                style={{
+                    display: 'grid',
+                    gridTemplateRows: collapsed ? '0fr' : '1fr',
+                    transition: 'grid-template-rows 200ms ease-out',
+                    overflow: 'hidden',
+                }}
+            >
+                <Box
+                    style={{
+                        minHeight: 0,
+                        opacity: collapsed ? 0 : 1,
+                        transition: 'opacity 200ms ease-out',
+                    }}
+                >
                     {block.type === 'text' && <TextBlock labId={labId} block={block} />}
                     {block.type === 'image' && <ImageBlock labId={labId} block={block} />}
                     {block.type === 'code' && <CodeBlock labId={labId} block={block} />}
                     {block.type === 'math' && <MathBlock labId={labId} block={block} />}
                     {block.type === 'heading' && <HeadingBlock labId={labId} block={block} />}
                 </Box>
-            )}
+            </Box>
         </Paper>
     );
 }

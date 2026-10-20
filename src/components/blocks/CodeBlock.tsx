@@ -35,7 +35,7 @@ export function CodeBlock({
 
             <Select
                 label={t('blockCodeLanguage')}
-                data={languages.map((l) => ({ value: l, label: l }))}
+                data={languages.map((l) => ({ value: l.name, label: l.name }))}
                 value={block.language}
                 onChange={(v) =>
                     v && updateBlock(labId, block.uid, { language: v } as Partial<Block>)

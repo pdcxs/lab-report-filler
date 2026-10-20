@@ -93,6 +93,12 @@ interface AppStrings {
     expandBlock: string;
     dropFileHint: string;
     droppedSkipped: string;
+    codeLanguagesLabel: string;
+    codeLanguagesHint: string;
+    codeLanguageName: string;
+    codeLanguageExtPlaceholder: string;
+    codeLanguageExtEmpty: string;
+    codeLanguageAdd: string;
 }
 
 export const strings: Record<Language, AppStrings> = {
@@ -189,6 +195,12 @@ export const strings: Record<Language, AppStrings> = {
         expandBlock: 'Expand',
         dropFileHint: 'Tip: drag an image or source code file anywhere onto the window to insert it quickly.',
         droppedSkipped: 'Some files were skipped',
+        codeLanguagesLabel: 'Code languages',
+        codeLanguagesHint: 'Add each language students can choose. Leave the extension field empty to use the built-in defaults.',
+        codeLanguageName: 'Language name',
+        codeLanguageExtPlaceholder: 'e.g. {exts}',
+        codeLanguageExtEmpty: 'Extensions (empty = any file)',
+        codeLanguageAdd: 'Add language',
     },
     zh: {
         openFolder: '打开目录',
@@ -205,7 +217,7 @@ export const strings: Record<Language, AppStrings> = {
         exampleWarning: '这是示例，请勿直接提交。',
         guideTitle: '实验记录应包含的内容',
         insertImage: '插入图片',
-        insertReference: '插入图片引用',
+        insertReference: '插入引用',
         insertCode: '插入代码',
         preview: '预览',
         validate: '检查',
@@ -283,6 +295,12 @@ export const strings: Record<Language, AppStrings> = {
         expandBlock: '展开',
         dropFileHint: '提示：把图片或源代码文件拖入窗口任意位置，可快速插入。',
         droppedSkipped: '部分文件被跳过',
+        codeLanguagesLabel: '代码语言',
+        codeLanguagesHint: '添加学生可选的语言。扩展名留空则使用内置默认值。',
+        codeLanguageName: '语言名称',
+        codeLanguageExtPlaceholder: '例如：{exts}',
+        codeLanguageExtEmpty: '扩展名（留空 = 任何文件）',
+        codeLanguageAdd: '添加语言',
     },
 };
 

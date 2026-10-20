@@ -13,7 +13,16 @@ pub struct LabConfig {
     pub typst: TypstConfig,
     pub experiments: Vec<Experiment>,
     #[serde(default)]
-    pub code_languages: Vec<String>,
+    pub code_languages: Vec<CodeLanguage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeLanguage {
+    pub name: String,
+    /// 老师手动设置的后缀名列表（小写，不含点）。为 None 时前端使用默认表。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

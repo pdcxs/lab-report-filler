@@ -37,6 +37,8 @@ import { useTeacherStore } from '../state/useTeacherStore';
 import { useLabStore } from '../state/useLabStore';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { TeacherPreview } from './TeacherPreview';
+import { CodeLanguagesEditor } from './CodeLanguagesEditor';
+import { useT } from '../i18n/useT';
 
 interface TeacherExportResult {
     zipPath: string;
@@ -91,6 +93,7 @@ function SortableLabButton(props: {
 
 export function TeacherWorkspace() {
     const clearRole = useLabStore((s) => s.clearRole);
+    const t = useT();
 
     const init = useTeacherStore((s) => s.init);
     const loaded = useTeacherStore((s) => s.loaded);
@@ -307,20 +310,13 @@ export function TeacherWorkspace() {
                                     value={config.language}
                                     onChange={(v) => v && setLanguage(v as 'zh' | 'en')}
                                 />
-                                <Textarea
-                                    label="代码语言列表（每行一个，用于插入代码下拉框）"
-                                    autosize
-                                    minRows={4}
-                                    value={config.codeLanguages.join('\n')}
-                                    onChange={(e) =>
-                                        setCodeLanguages(
-                                            e.currentTarget.value
-                                                .split('\n')
-                                                .map((s) => s.trim())
-                                                .filter(Boolean),
-                                        )
-                                    }
-                                />
+                                <Stack gap={4}>
+                                    <Text size="sm" fw={500}>{t('codeLanguagesLabel')}</Text>
+                                    <CodeLanguagesEditor
+                                        value={config.codeLanguages}
+                                        onChange={(v) => setCodeLanguages(v)}
+                                    />
+                                </Stack>
                             </Stack>
                         </Card>
 

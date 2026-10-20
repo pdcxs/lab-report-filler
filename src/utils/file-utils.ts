@@ -1,100 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Block, ImportedImage } from '../types/lab-config';
+import type { Block, CodeLanguage, ImportedImage } from '../types/lab-config';
 import { newUid } from './uid';
+import { DEFAULT_LANG_EXTS } from './constants';
 
 const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
-
-const LANG_EXT_MAP: Record<string, string[]> = {
-    // ================= 主流系统/编译型语言 =================
-    java: ['java', 'jav'],
-    python: ['py', 'pyw', 'pyi', 'rpy', 'gyp', 'gypi'],
-    c: ['c', 'h', 'cats', 'idc'],
-    cpp: ['cpp', 'c++', 'cc', 'cp', 'cxx', 'hpp', 'h++', 'hh', 'hxx', 'inc', 'inl', 'ino', 'ipp', 'ixx', 're', 'tcc', 'tpp'],
-    csharp: ['cs', 'csx', 'cake', 'linq'],
-    rust: ['rs', 'rlib'],
-    go: ['go'],
-    kotlin: ['kt', 'kts'],
-    swift: ['swift'],
-    objective_c: ['m', 'mm'],
-    zig: ['zig'],
-    nim: ['nim', 'nims'],
-    crystal: ['cr'],
-    d: ['d', 'di'],
-    v: ['v', 'vsh'],
-    assembly: ['asm', 's', 'S', 'nasm'],
-
-    // ================= JVM & .NET 生态 =================
-    scala: ['scala', 'sc'],
-    groovy: ['groovy', 'gvy', 'gy', 'gsh'],
-    clojure: ['clj', 'cljs', 'cljc', 'edn'],
-    fsharp: ['fs', 'fsi', 'fsx', 'fsscript'],
-    visual_basic: ['vb', 'vbs', 'bas', 'cls', 'frm', 'frx', 'vba', 'vbhtml'],
-
-    // ================= 脚本与动态语言 =================
-    javascript: ['js', 'mjs', 'cjs', 'jsx', 'es6', '_js', 'bones'],
-    typescript: ['ts', 'tsx', 'mts', 'cts'],
-    php: ['php', 'php3', 'php4', 'php5', 'phtml', 'ctp'],
-    ruby: ['rb', 'rbx', 'rjs', 'gemspec', 'rake', 'erb', 'rhtml'],
-    perl: ['pl', 'pm', 't', 'pod'],
-    lua: ['lua', 'rockspec'],
-    shell: ['sh', 'bash', 'zsh', 'fish', 'ksh', 'csh'],
-    powershell: ['ps1', 'psm1', 'psd1'],
-    batch: ['bat', 'cmd'],
-    tcl: ['tcl', 'tk'],
-
-    // ================= 函数式语言 =================
-    haskell: ['hs', 'lhs'],
-    elixir: ['ex', 'exs'],
-    erlang: ['erl', 'hrl'],
-    ocaml: ['ml', 'mli', 'mll', 'mly'],
-    lisp: ['lisp', 'lsp', 'cl'],
-    scheme: ['scm', 'ss', 'sls', 'sps'],
-    racket: ['rkt', 'rktl'],
-    julia: ['jl'],
-
-    // ================= 数据、配置与序列化 =================
-    json: ['json', 'jsonc', 'json5', 'geojson', 'topojson'],
-    yaml: ['yml', 'yaml'],
-    xml: ['xml', 'xsd', 'xsl', 'xslt', 'dtd', 'plist'],
-    toml: ['toml'],
-    ini: ['ini', 'cfg', 'conf', 'properties', 'gitconfig'],
-    csv: ['csv', 'tsv'],
-    sql: ['sql', 'ddl', 'dml'],
-    graphql: ['graphql', 'gql'],
-    protobuf: ['proto'],
-
-    // ================= 标记与样式 =================
-    html: ['html', 'htm', 'xhtml', 'shtml', 'mdoc', 'jsp', 'asp', 'aspx', 'jshtm'],
-    css: ['css', 'scss', 'sass', 'less'],
-    markdown: ['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext'],
-    mdx: ['mdx'],
-    latex: ['tex', 'ltx', 'sty', 'cls'],
-    rst: ['rst'],
-
-    // ================= 构建、基础设施与 DevOps =================
-    dockerfile: ['dockerfile', 'containerfile'],
-    terraform: ['tf', 'tfvars', 'hcl'],
-    cmake: ['cmake', 'cmake.in'],
-    makefile: ['mk', 'mak', 'make'],
-    nginx: ['nginx', 'nginxconf'],
-    apache: ['htaccess', 'htpasswd'],
-
-    // ================= 其他领域特定语言 =================
-    solidity: ['sol'],
-    verilog: ['v', 'vh', 'sv', 'svh'], // 注意：.v 与 V 语言冲突
-    vhdl: ['vhd', 'vhdl'],
-    matlab: ['m'], // 注意：.m 与 Objective-C 冲突
-    r: ['r', 'rhistory', 'rmd', 'rprofile', 'rt'],
-    dart: ['dart'],
-    fortran: ['f', 'f90', 'f95', 'f03', 'f08', 'for', 'fpp'],
-    pascal: ['pas', 'pp', 'p'],
-    cobol: ['cob', 'cbl', 'ccp', 'cobol', 'cpy'],
-    ada: ['adb', 'ads'],
-    prolog: ['pl', 'pro'], // 注意：.pl 与 Perl 冲突
-    scratch: ['sb', 'sb2', 'sb3'],
-    // 文本类
-    text: ['txt', 'log', 'text', 'readme'],
-};
 
 export interface FileInfo {
     path: string;
@@ -116,12 +25,21 @@ export function isImageExt(ext: string): boolean {
     return IMAGE_EXTS.includes(ext.toLowerCase());
 }
 
-export function extToLanguage(ext: string, availableLangs: string[]): string | null {
+/** 解析某个语言应匹配的后缀名。老师设置优先，否则用默认表。 */
+export function resolveExtensions(lang: CodeLanguage): string[] {
+    if (lang.extensions && lang.extensions.length > 0) {
+        return lang.extensions.map((e) => e.toLowerCase());
+    }
+    return DEFAULT_LANG_EXTS[lang.name] ?? [];
+}
+
+export function extToLanguage(
+    ext: string,
+    languages: CodeLanguage[],
+): string | null {
     const lower = ext.toLowerCase();
-    for (const [lang, exts] of Object.entries(LANG_EXT_MAP)) {
-        if (exts.includes(lower) && availableLangs.includes(lang)) {
-            return lang;
-        }
+    for (const lang of languages) {
+        if (resolveExtensions(lang).includes(lower)) return lang.name;
     }
     return null;
 }
@@ -133,7 +51,7 @@ export interface DroppedFileResult {
 
 export async function processDroppedFiles(
     paths: string[],
-    codeLanguages: string[],
+    codeLanguages: CodeLanguage[],
     importImage: (src: string) => Promise<ImportedImage>,
 ): Promise<DroppedFileResult> {
     const blocks: Block[] = [];
@@ -142,6 +60,7 @@ export async function processDroppedFiles(
     for (const path of paths) {
         const info = splitPath(path);
 
+        // 图片
         if (isImageExt(info.ext)) {
             try {
                 const imported = await importImage(path);
@@ -151,6 +70,7 @@ export async function processDroppedFiles(
                     title: info.stem,
                     relativePath: imported.relativePath,
                     width: 80,
+                    collapsed: true,
                 });
             } catch {
                 unsupported.push(info.name);
@@ -158,16 +78,23 @@ export async function processDroppedFiles(
             continue;
         }
 
-        const lang = extToLanguage(info.ext, codeLanguages);
-        if (lang) {
+        // 代码：优先按扩展名匹配语言
+        let matched = extToLanguage(info.ext, codeLanguages);
+        // 匹配不到任何语言 → 用第一个语言作为兜底（"接收任何文件"）
+        if (matched === null && codeLanguages.length > 0) {
+            matched = codeLanguages[0].name;
+        }
+
+        if (matched !== null) {
             try {
                 const content = await invoke<string>('read_text_file', { path });
                 blocks.push({
                     type: 'code',
                     uid: newUid(),
                     title: info.name,
-                    language: lang,
+                    language: matched,
                     code: content,
+                    collapsed: true,
                 });
             } catch {
                 unsupported.push(info.name);

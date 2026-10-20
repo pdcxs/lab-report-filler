@@ -78,37 +78,54 @@ export interface LabConfig {
     student: StudentConfig;
     typst: TypstConfig;
     experiments: Experiment[];
-    codeLanguages: string[];
+    codeLanguages: CodeLanguage[];
 }
 
 // =====================================================================
 // Block
 // =====================================================================
 
+export interface CodeLanguage {
+    name: string;
+    /** 老师手动设置的后缀名列表（小写，不含点）。未设置时使用默认表。 */
+    extensions?: string[];
+}
+
 export type Block =
-  | { type: 'text'; uid: string; content: string; raw: boolean }
-  | {
-      type: 'image';
-      uid: string;
-      title: string;
-      relativePath: string;
-      width: number;
+    | { type: 'text'; uid: string; content: string; raw: boolean; collapsed?: boolean }
+    | {
+        type: 'image';
+        uid: string;
+        title: string;
+        relativePath: string;
+        width: number;
+        collapsed?: boolean;
     }
-  | {
-      type: 'code';
-      uid: string;
-      title: string;
-      language: string;
-      code: string;
+    | {
+        type: 'code';
+        uid: string;
+        title: string;
+        language: string;
+        code: string;
+        collapsed?: boolean;
     }
-  | {
-      type: 'math';
-      uid: string;
-      title: string;
-      formula: string;
-      format: 'typst' | 'latex';
+    | {
+        type: 'math';
+        uid: string;
+        title: string;
+        formula: string;
+        format: 'typst' | 'latex';
+        collapsed?: boolean;
     }
-  | { type: 'heading'; uid: string; level: number; content: string };
+    | {
+        type: 'heading';
+        uid: string;
+        level: number;
+        content: string;
+        collapsed?: boolean;
+    };
+
+
 
 export interface StudentData {
     name: string;

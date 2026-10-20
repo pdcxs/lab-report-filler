@@ -43,7 +43,7 @@ export function AddBlockMenu({
             type: 'code',
             uid: newUid(),
             title: '',
-            language: config?.codeLanguages?.[0] ?? 'java',
+            language: config?.codeLanguages?.[0]?.name ?? 'java',
             code: '',
         });
 
