@@ -117,3 +117,27 @@ export const DEFAULT_CODE_LANGUAGES: CodeLanguage[] = [
     { name: 'typescript' },
     { name: 'text' },
 ];
+
+/** 兼容旧格式（codeLanguages 是 string[]）并补齐默认值。 */
+export function normalizeCodeLanguages(raw: unknown): CodeLanguage[] {
+    if (!Array.isArray(raw)) return [...DEFAULT_CODE_LANGUAGES];
+    const result: CodeLanguage[] = [];
+    for (const item of raw) {
+        if (typeof item === 'string') {
+            result.push({ name: item });
+        } else if (
+            item &&
+            typeof item === 'object' &&
+            typeof (item as { name?: unknown }).name === 'string'
+        ) {
+            const obj = item as { name: string; extensions?: unknown };
+            result.push({
+                name: obj.name,
+                extensions: Array.isArray(obj.extensions)
+                    ? obj.extensions.filter((e): e is string => typeof e === 'string')
+                    : undefined,
+            });
+        }
+    }
+    return result.length > 0 ? result : [...DEFAULT_CODE_LANGUAGES];
+}

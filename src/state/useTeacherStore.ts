@@ -11,6 +11,7 @@ import type {
     TypstConfig,
     ValidationRules,
 } from '../types/lab-config';
+import { normalizeCodeLanguages } from '../utils/constants';
 
 // =====================================================================
 // 默认模板
@@ -235,6 +236,7 @@ interface TeacherState {
     removeExperiment: (idx: number) => void;
     reorderExperiments: (from: number, to: number) => void;
     setActiveLabIndex: (idx: number) => void;
+    loadConfig: (config: LabConfig) => Promise<void>;
 }
 
 let teacherSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -270,6 +272,20 @@ export const useTeacherStore = create<TeacherState>((set, get) => {
                 console.warn('load teacher draft failed', e);
             }
             set({ loaded: true });
+        },
+
+
+        loadConfig: async (config) => {
+            const normalized: LabConfig = {
+                ...config,
+                codeLanguages: normalizeCodeLanguages(config.codeLanguages),
+            };
+            set({ config: normalized, activeLabIndex: 0 });
+            try {
+                await invoke('save_teacher_draft', { config: normalized });
+            } catch (e) {
+                console.warn('save teacher draft failed', e);
+            }
         },
 
         newConfig: async () => {

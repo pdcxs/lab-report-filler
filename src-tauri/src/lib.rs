@@ -22,6 +22,7 @@ pub fn run() {
             storage::load_student_data,
             storage::save_student_data,
             storage::read_text_file,
+            storage::write_text_file,
             image::import_image,
             typst::generate_typst,
             typst::compile_preview,

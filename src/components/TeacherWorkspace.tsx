@@ -3,6 +3,7 @@ import {
     Box,
     Button,
     Card,
+    Modal,
     Checkbox,
     Group,
     NumberInput,
@@ -19,6 +20,7 @@ import { IconGripVertical, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
+import type { LabConfig } from '../types/lab-config';
 import {
     DndContext,
     closestCenter,
@@ -110,10 +112,16 @@ export function TeacherWorkspace() {
     const reorderExperiments = useTeacherStore((s) => s.reorderExperiments);
     const setActiveLabIndex = useTeacherStore((s) => s.setActiveLabIndex);
     const newConfig = useTeacherStore((s) => s.newConfig);
+    const loadConfig = useTeacherStore((s) => s.loadConfig);
 
     const [exporting, setExporting] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [logoPath, setLogoPath] = useState<string | null>(null);
+    const [pendingTemplate, setPendingTemplate] = useState<{
+        config: LabConfig;
+        path: string;
+    } | null>(null);
+    const [confirmNewOpen, setConfirmNewOpen] = useState(false);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -132,9 +140,98 @@ export function TeacherWorkspace() {
         reorderExperiments(from, to);
     };
 
-    const handleNewConfig = async () => {
-        if (!window.confirm('确定要新建吗？当前编辑内容会被清空。')) return;
+    const handleSaveTemplate = async () => {
+        const defaultName = `${config.course.courseName.trim() || 'template'}.json`;
+        const path = await save({
+            defaultPath: defaultName,
+            filters: [{ name: 'Template', extensions: ['json'] }],
+        });
+        if (typeof path !== 'string') return;
+
+        try {
+            const json = JSON.stringify(config, null, 2);
+            await invoke('write_text_file', { path, content: json });
+            notifications.show({
+                color: 'green',
+                title: '已保存',
+                message: path,
+                autoClose: 6000,
+            });
+        } catch (e) {
+            notifications.show({
+                color: 'red',
+                title: '保存失败',
+                message: String(e),
+                autoClose: 8000,
+            });
+        }
+    };
+
+    const handleOpenTemplate = async () => {
+        const path = await open({
+            multiple: false,
+            filters: [{ name: 'Template', extensions: ['json'] }],
+        });
+        if (typeof path !== 'string') return;
+
+        try {
+            const content = await invoke<string>('read_text_file', { path });
+            const parsed = JSON.parse(content) as LabConfig;
+            if (
+                !parsed ||
+                typeof parsed !== 'object' ||
+                !Array.isArray(parsed.experiments)
+            ) {
+                throw new Error('不是有效的模板文件 / Not a valid template file');
+            }
+            setPendingTemplate({ config: parsed, path });
+        } catch (e) {
+            notifications.show({
+                color: 'red',
+                title: '打开失败',
+                message: String(e),
+                autoClose: 8000,
+            });
+        }
+    };
+
+    const confirmLoadTemplate = async () => {
+        if (!pendingTemplate) return;
+        const { config: cfg, path } = pendingTemplate;
+        setPendingTemplate(null);
+        try {
+            await loadConfig(cfg);
+            notifications.show({
+                color: 'green',
+                title: '已打开',
+                message: path,
+                autoClose: 6000,
+            });
+        } catch (e) {
+            notifications.show({
+                color: 'red',
+                title: '打开失败',
+                message: String(e),
+                autoClose: 8000,
+            });
+        }
+    };
+
+    const cancelLoadTemplate = () => {
+        setPendingTemplate(null);
+    };
+
+    const handleNewConfig = () => {
+        setConfirmNewOpen(true);
+    };
+
+    const confirmNewConfig = async () => {
+        setConfirmNewOpen(false);
         await newConfig();
+    };
+
+    const cancelNewConfig = () => {
+        setConfirmNewOpen(false);
     };
 
     const handleExport = async () => {
@@ -185,320 +282,371 @@ export function TeacherWorkspace() {
     }
 
     return (
-        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh' }}>
-            <Box
-                p="xs"
-                px="md"
-                style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}
-            >
-                <Group justify="space-between">
-                    <Text fw={600}>教师模式</Text>
-                    <Group gap="sm">
-                        <Button
-                            variant="default"
-                            size="xs"
-                            onClick={async () => {
-                                const p = await open({
-                                    multiple: false,
-                                    filters: [{ name: '图片', extensions: ['jpg', 'jpeg', 'png', 'webp'] }],
-                                });
-                                if (typeof p === 'string') setLogoPath(p);
-                            }}
-                        >
-                            {logoPath ? '更换 Logo' : '选择 Logo'}
-                        </Button>
-                        {logoPath && (
-                            <Button variant="subtle" size="xs" onClick={() => setLogoPath(null)}>
-                                用默认
-                            </Button>
-                        )}
-                        <Button variant="default" size="xs" onClick={() => setPreviewOpen((v) => !v)}>
-                            {previewOpen ? '关闭预览' : '打开预览'}
-                        </Button>
-                        <Button variant="subtle" size="xs" onClick={() => void handleNewConfig()}>
-                            新建
-                        </Button>
-                        <Button variant="subtle" size="xs" onClick={() => void clearRole()}>
-                            切换身份
-                        </Button>
-                        <Button
-                            variant="light"
-                            size="xs"
-                            loading={exporting}
-                            onClick={() => void handleExport()}
-                        >
-                            导出 ZIP
-                        </Button>
-                        <ColorSchemeToggle />
-                    </Group>
-                </Group>
-            </Box>
-
-            <Group align="stretch" gap={0} style={{ flex: 1, minHeight: 0 }} wrap="nowrap">
+        <>
+            <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh' }}>
                 <Box
-                    w={240}
-                    p="md"
-                    style={{
-                        borderRight: '1px solid var(--mantine-color-gray-3)',
-                        overflowY: 'auto',
-                        flexShrink: 0,
-                    }}
+                    p="xs"
+                    px="md"
+                    style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}
                 >
-                    <Title order={5} mb="sm">
-                        实验列表
-                    </Title>
-                    <Stack gap="xs">
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                            <SortableContext
-                                items={config.experiments.map((e) => e.id)}
-                                strategy={verticalListSortingStrategy}
+                    <Group justify="space-between">
+                        <Text fw={600}>教师模式</Text>
+                        <Group gap="sm">
+                            <Button
+                                variant="default"
+                                size="xs"
+                                onClick={async () => {
+                                    const p = await open({
+                                        multiple: false,
+                                        filters: [{ name: '图片', extensions: ['jpg', 'jpeg', 'png', 'webp'] }],
+                                    });
+                                    if (typeof p === 'string') setLogoPath(p);
+                                }}
                             >
-                                <Stack gap="xs">
-                                    {config.experiments.map((exp, i) => (
-                                        <SortableLabButton
-                                            key={exp.id}
-                                            id={exp.id}
-                                            index={i}
-                                            name={exp.name}
-                                            active={i === activeIdx}
-                                            onClick={() => setActiveLabIndex(i)}
-                                            onRemove={() => removeExperiment(i)}
-                                        />
-                                    ))}
-                                </Stack>
-                            </SortableContext>
-                        </DndContext>
-                        <Button variant="default" size="xs" onClick={addExperiment}>
-                            + 添加实验
-                        </Button>
-                    </Stack>
+                                {logoPath ? '更换 Logo' : '选择 Logo'}
+                            </Button>
+                            {logoPath && (
+                                <Button variant="subtle" size="xs" onClick={() => setLogoPath(null)}>
+                                    用默认
+                                </Button>
+                            )}
+                            <Button variant="default" size="xs" onClick={() => setPreviewOpen((v) => !v)}>
+                                {previewOpen ? '关闭预览' : '打开预览'}
+                            </Button>
+                            <Button variant="subtle" size="xs" onClick={() => void handleNewConfig()}>
+                                新建
+                            </Button>
+                            <Button variant="subtle" size="xs" onClick={() => void handleOpenTemplate()}>打开模板</Button>
+                            <Button variant="subtle" size="xs" onClick={() => void handleSaveTemplate()}>保存模板</Button>
+                            <Button variant="subtle" size="xs" onClick={() => void clearRole()}>
+                                切换身份
+                            </Button>
+                            <Button
+                                variant="light"
+                                size="xs"
+                                loading={exporting}
+                                onClick={() => void handleExport()}
+                            >
+                                导出 ZIP
+                            </Button>
+                            <ColorSchemeToggle />
+                        </Group>
+                    </Group>
                 </Box>
 
-                <ScrollArea style={{ flex: 1, minWidth: 0 }}>
-                    <Stack p="md" gap="md">
-                        <Card withBorder>
-                            <Title order={5} mb="sm">
-                                课程信息
-                            </Title>
-                            <Stack gap="sm">
-                                <TextInput
-                                    label="课程名称"
-                                    value={config.course.courseName}
-                                    onChange={(e) => updateCourse({ courseName: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="指导教师"
-                                    value={config.course.teacherName}
-                                    onChange={(e) => updateCourse({ teacherName: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="默认班级（学生可改）"
-                                    value={config.course.className}
-                                    onChange={(e) => updateCourse({ className: e.currentTarget.value })}
-                                />
-                                <TextInput
-                                    label="默认实验地点（学生可改）"
-                                    value={config.course.location}
-                                    onChange={(e) => updateCourse({ location: e.currentTarget.value })}
-                                />
-                                <Select
-                                    label="界面语言"
-                                    data={[
-                                        { value: 'zh', label: '中文' },
-                                        { value: 'en', label: 'English' },
-                                    ]}
-                                    value={config.language}
-                                    onChange={(v) => v && setLanguage(v as 'zh' | 'en')}
-                                />
-                                <Stack gap={4}>
-                                    <Text size="sm" fw={500}>{t('codeLanguagesLabel')}</Text>
-                                    <CodeLanguagesEditor
-                                        value={config.codeLanguages}
-                                        onChange={(v) => setCodeLanguages(v)}
-                                    />
-                                </Stack>
-                            </Stack>
-                        </Card>
+                <Group align="stretch" gap={0} style={{ flex: 1, minHeight: 0 }} wrap="nowrap">
+                    <Box
+                        w={240}
+                        p="md"
+                        style={{
+                            borderRight: '1px solid var(--mantine-color-gray-3)',
+                            overflowY: 'auto',
+                            flexShrink: 0,
+                        }}
+                    >
+                        <Title order={5} mb="sm">
+                            实验列表
+                        </Title>
+                        <Stack gap="xs">
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext
+                                    items={config.experiments.map((e) => e.id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    <Stack gap="xs">
+                                        {config.experiments.map((exp, i) => (
+                                            <SortableLabButton
+                                                key={exp.id}
+                                                id={exp.id}
+                                                index={i}
+                                                name={exp.name}
+                                                active={i === activeIdx}
+                                                onClick={() => setActiveLabIndex(i)}
+                                                onRemove={() => removeExperiment(i)}
+                                            />
+                                        ))}
+                                    </Stack>
+                                </SortableContext>
+                            </DndContext>
+                            <Button variant="default" size="xs" onClick={addExperiment}>
+                                + 添加实验
+                            </Button>
+                        </Stack>
+                    </Box>
 
-                        <Card withBorder>
-                            <Title order={5} mb="sm">
-                                学生字段配置
-                            </Title>
-                            <Stack gap="sm">
-                                <Text size="xs" c="dimmed">
-                                    姓名、学号、班级、地点的标签和提示文字由界面语言自动决定，切换语言时会自动更新。以下选项对两个语言都生效。
-                                </Text>
-                                <Group grow>
-                                    <NumberInput
-                                        label="姓名最小长度"
-                                        min={1}
-                                        value={config.student.name.minLength}
-                                        onChange={(v) =>
-                                            updateStudentName({ minLength: typeof v === 'number' ? v : 2 })
-                                        }
-                                    />
-                                    <NumberInput
-                                        label="姓名最大长度"
-                                        min={1}
-                                        value={config.student.name.maxLength}
-                                        onChange={(v) =>
-                                            updateStudentName({ maxLength: typeof v === 'number' ? v : 20 })
-                                        }
-                                    />
-                                </Group>
-                                <Checkbox
-                                    label="姓名必须包含中文字符"
-                                    checked={config.student.name.requireCjk}
-                                    onChange={(e) =>
-                                        updateStudentName({ requireCjk: e.currentTarget.checked })
-                                    }
-                                />
-                                <TextInput
-                                    label="学号匹配规则（正则表达式）"
-                                    value={config.student.studentId.pattern}
-                                    onChange={(e) =>
-                                        updateStudentId({ pattern: e.currentTarget.value })
-                                    }
-                                />
-                            </Stack>
-                        </Card>
-
-                        {activeExp && (
+                    <ScrollArea style={{ flex: 1, minWidth: 0 }}>
+                        <Stack p="md" gap="md">
                             <Card withBorder>
                                 <Title order={5} mb="sm">
-                                    实验：{activeExp.name || '(未命名)'}
+                                    课程信息
                                 </Title>
                                 <Stack gap="sm">
                                     <TextInput
-                                        label="实验名称"
-                                        value={activeExp.name}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, { name: e.currentTarget.value })
-                                        }
-                                    />
-                                    <Textarea
-                                        label="实验目的和要求（Typst 源码，例如：+ 目的1）"
-                                        autosize
-                                        minRows={3}
-                                        value={activeExp.objectives}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, { objectives: e.currentTarget.value })
-                                        }
-                                        styles={{
-                                            input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 },
-                                        }}
-                                    />
-                                    <Textarea
-                                        label="实验内容（Typst 源码）"
-                                        autosize
-                                        minRows={3}
-                                        value={activeExp.content}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, { content: e.currentTarget.value })
-                                        }
-                                        styles={{
-                                            input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 },
-                                        }}
+                                        label="课程名称"
+                                        value={config.course.courseName}
+                                        onChange={(e) => updateCourse({ courseName: e.currentTarget.value })}
                                     />
                                     <TextInput
-                                        label="实验仪器和设备"
-                                        value={activeExp.instrument}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, { instrument: e.currentTarget.value })
-                                        }
-                                    />
-                                    <Textarea
-                                        label="记录指导（每行一条）"
-                                        autosize
-                                        minRows={3}
-                                        value={toLines(activeExp.recordGuide)}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, {
-                                                recordGuide: fromLines(e.currentTarget.value),
-                                            })
-                                        }
+                                        label="指导教师"
+                                        value={config.course.teacherName}
+                                        onChange={(e) => updateCourse({ teacherName: e.currentTarget.value })}
                                     />
                                     <TextInput
-                                        label="编辑框占位提示"
-                                        value={activeExp.placeholder}
-                                        onChange={(e) =>
-                                            updateExperiment(activeIdx, { placeholder: e.currentTarget.value })
-                                        }
+                                        label="默认班级（学生可改）"
+                                        value={config.course.className}
+                                        onChange={(e) => updateCourse({ className: e.currentTarget.value })}
                                     />
+                                    <TextInput
+                                        label="默认实验地点（学生可改）"
+                                        value={config.course.location}
+                                        onChange={(e) => updateCourse({ location: e.currentTarget.value })}
+                                    />
+                                    <Select
+                                        label="界面语言"
+                                        data={[
+                                            { value: 'zh', label: '中文' },
+                                            { value: 'en', label: 'English' },
+                                        ]}
+                                        value={config.language}
+                                        onChange={(v) => v && setLanguage(v as 'zh' | 'en')}
+                                    />
+                                    <Stack gap={4}>
+                                        <Text size="sm" fw={500}>{t('codeLanguagesLabel')}</Text>
+                                        <CodeLanguagesEditor
+                                            value={config.codeLanguages}
+                                            onChange={(v) => setCodeLanguages(v)}
+                                        />
+                                    </Stack>
+                                </Stack>
+                            </Card>
+
+                            <Card withBorder>
+                                <Title order={5} mb="sm">
+                                    学生字段配置
+                                </Title>
+                                <Stack gap="sm">
+                                    <Text size="xs" c="dimmed">
+                                        姓名、学号、班级、地点的标签和提示文字由界面语言自动决定，切换语言时会自动更新。以下选项对两个语言都生效。
+                                    </Text>
                                     <Group grow>
                                         <NumberInput
-                                            label="最少代码块数量"
-                                            min={0}
-                                            value={activeExp.validation.minCodeBlocks}
+                                            label="姓名最小长度"
+                                            min={1}
+                                            value={config.student.name.minLength}
                                             onChange={(v) =>
-                                                updateExperiment(activeIdx, {
-                                                    validation: {
-                                                        ...activeExp.validation,
-                                                        minCodeBlocks: typeof v === 'number' ? v : 0,
-                                                    },
-                                                })
+                                                updateStudentName({ minLength: typeof v === 'number' ? v : 2 })
                                             }
                                         />
                                         <NumberInput
-                                            label="最少图片数量"
-                                            min={0}
-                                            value={activeExp.validation.minFigures}
+                                            label="姓名最大长度"
+                                            min={1}
+                                            value={config.student.name.maxLength}
                                             onChange={(v) =>
-                                                updateExperiment(activeIdx, {
-                                                    validation: {
-                                                        ...activeExp.validation,
-                                                        minFigures: typeof v === 'number' ? v : 0,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                        <NumberInput
-                                            label="最少文本块数量"
-                                            min={0}
-                                            value={activeExp.validation.minTextBlocks}
-                                            onChange={(v) =>
-                                                updateExperiment(activeIdx, {
-                                                    validation: {
-                                                        ...activeExp.validation,
-                                                        minTextBlocks: typeof v === 'number' ? v : 0,
-                                                    },
-                                                })
+                                                updateStudentName({ maxLength: typeof v === 'number' ? v : 20 })
                                             }
                                         />
                                     </Group>
-                                    <NumberInput
-                                        label="最少文字说明字符数（所有文本块合计）"
-                                        min={0}
-                                        value={activeExp.validation.minProseChars}
-                                        onChange={(v) =>
-                                            updateExperiment(activeIdx, {
-                                                validation: {
-                                                    ...activeExp.validation,
-                                                    minProseChars: typeof v === 'number' ? v : 0,
-                                                },
-                                            })
+                                    <Checkbox
+                                        label="姓名必须包含中文字符"
+                                        checked={config.student.name.requireCjk}
+                                        onChange={(e) =>
+                                            updateStudentName({ requireCjk: e.currentTarget.checked })
                                         }
                                     />
-                                    <Checkbox
-                                        label="所有图片/代码/公式都必须被引用（有标题就必须在正文 [[标题]] 引用）"
-                                        checked={activeExp.validation.requireAllReferenced}
+                                    <TextInput
+                                        label="学号匹配规则（正则表达式）"
+                                        value={config.student.studentId.pattern}
                                         onChange={(e) =>
-                                            updateExperiment(activeIdx, {
-                                                validation: {
-                                                    ...activeExp.validation,
-                                                    requireAllReferenced: e.currentTarget.checked,
-                                                },
-                                            })
+                                            updateStudentId({ pattern: e.currentTarget.value })
                                         }
                                     />
                                 </Stack>
                             </Card>
-                        )}
-                    </Stack>
-                </ScrollArea>
 
-                {previewOpen && <TeacherPreview logoPath={logoPath} />}
-            </Group>
-        </Box>
+                            {activeExp && (
+                                <Card withBorder>
+                                    <Title order={5} mb="sm">
+                                        实验：{activeExp.name || '(未命名)'}
+                                    </Title>
+                                    <Stack gap="sm">
+                                        <TextInput
+                                            label="实验名称"
+                                            value={activeExp.name}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, { name: e.currentTarget.value })
+                                            }
+                                        />
+                                        <Textarea
+                                            label="实验目的和要求（Typst 源码，例如：+ 目的1）"
+                                            autosize
+                                            minRows={3}
+                                            value={activeExp.objectives}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, { objectives: e.currentTarget.value })
+                                            }
+                                            styles={{
+                                                input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 },
+                                            }}
+                                        />
+                                        <Textarea
+                                            label="实验内容（Typst 源码）"
+                                            autosize
+                                            minRows={3}
+                                            value={activeExp.content}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, { content: e.currentTarget.value })
+                                            }
+                                            styles={{
+                                                input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 },
+                                            }}
+                                        />
+                                        <TextInput
+                                            label="实验仪器和设备"
+                                            value={activeExp.instrument}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, { instrument: e.currentTarget.value })
+                                            }
+                                        />
+                                        <Textarea
+                                            label="记录指导（每行一条）"
+                                            autosize
+                                            minRows={3}
+                                            value={toLines(activeExp.recordGuide)}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, {
+                                                    recordGuide: fromLines(e.currentTarget.value),
+                                                })
+                                            }
+                                        />
+                                        <TextInput
+                                            label="编辑框占位提示"
+                                            value={activeExp.placeholder}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, { placeholder: e.currentTarget.value })
+                                            }
+                                        />
+                                        <Group grow>
+                                            <NumberInput
+                                                label="最少代码块数量"
+                                                min={0}
+                                                value={activeExp.validation.minCodeBlocks}
+                                                onChange={(v) =>
+                                                    updateExperiment(activeIdx, {
+                                                        validation: {
+                                                            ...activeExp.validation,
+                                                            minCodeBlocks: typeof v === 'number' ? v : 0,
+                                                        },
+                                                    })
+                                                }
+                                            />
+                                            <NumberInput
+                                                label="最少图片数量"
+                                                min={0}
+                                                value={activeExp.validation.minFigures}
+                                                onChange={(v) =>
+                                                    updateExperiment(activeIdx, {
+                                                        validation: {
+                                                            ...activeExp.validation,
+                                                            minFigures: typeof v === 'number' ? v : 0,
+                                                        },
+                                                    })
+                                                }
+                                            />
+                                            <NumberInput
+                                                label="最少文本块数量"
+                                                min={0}
+                                                value={activeExp.validation.minTextBlocks}
+                                                onChange={(v) =>
+                                                    updateExperiment(activeIdx, {
+                                                        validation: {
+                                                            ...activeExp.validation,
+                                                            minTextBlocks: typeof v === 'number' ? v : 0,
+                                                        },
+                                                    })
+                                                }
+                                            />
+                                        </Group>
+                                        <NumberInput
+                                            label="最少文字说明字符数（所有文本块合计）"
+                                            min={0}
+                                            value={activeExp.validation.minProseChars}
+                                            onChange={(v) =>
+                                                updateExperiment(activeIdx, {
+                                                    validation: {
+                                                        ...activeExp.validation,
+                                                        minProseChars: typeof v === 'number' ? v : 0,
+                                                    },
+                                                })
+                                            }
+                                        />
+                                        <Checkbox
+                                            label="所有图片/代码/公式都必须被引用（有标题就必须在正文 [[标题]] 引用）"
+                                            checked={activeExp.validation.requireAllReferenced}
+                                            onChange={(e) =>
+                                                updateExperiment(activeIdx, {
+                                                    validation: {
+                                                        ...activeExp.validation,
+                                                        requireAllReferenced: e.currentTarget.checked,
+                                                    },
+                                                })
+                                            }
+                                        />
+                                    </Stack>
+                                </Card>
+                            )}
+                        </Stack>
+                    </ScrollArea>
+
+                    {previewOpen && <TeacherPreview logoPath={logoPath} />}
+                </Group>
+            </Box>
+            <Modal
+                opened={pendingTemplate !== null}
+                onClose={cancelLoadTemplate}
+                title="确认打开模板"
+                centered
+                closeOnClickOutside={false}
+            >
+                <Stack gap="md">
+                    <Text>打开模板会替换当前编辑的内容，是否继续？</Text>
+                    {pendingTemplate && (
+                        <Text
+                            size="xs"
+                            c="dimmed"
+                            style={{ wordBreak: 'break-all', fontFamily: 'monospace' }}
+                        >
+                            {pendingTemplate.path}
+                        </Text>
+                    )}
+                    <Group justify="flex-end">
+                        <Button variant="default" onClick={cancelLoadTemplate}>
+                            取消
+                        </Button>
+                        <Button color="red" onClick={() => void confirmLoadTemplate()}>
+                            确认替换
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+            <Modal
+                opened={confirmNewOpen}
+                onClose={cancelNewConfig}
+                title="确认新建"
+                centered
+                closeOnClickOutside={false}
+            >
+                <Stack gap="md">
+                    <Text>新建会清空当前正在编辑的内容，是否继续？</Text>
+                    <Group justify="flex-end">
+                        <Button variant="default" onClick={cancelNewConfig}>
+                            取消
+                        </Button>
+                        <Button color="red" onClick={() => void confirmNewConfig()}>
+                            确认新建
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+        </>
     );
 }
