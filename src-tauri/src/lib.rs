@@ -21,6 +21,7 @@ pub fn run() {
             settings::clear_teacher_draft,
             storage::load_student_data,
             storage::save_student_data,
+            storage::read_text_file,
             image::import_image,
             typst::generate_typst,
             typst::compile_preview,

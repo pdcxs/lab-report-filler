@@ -89,6 +89,10 @@ interface AppStrings {
     headingLevel5: string;
     headingLevel6: string;
     headingContent: string;
+    collapseBlock: string;
+    expandBlock: string;
+    dropFileHint: string;
+    droppedSkipped: string;
 }
 
 export const strings: Record<Language, AppStrings> = {
@@ -181,6 +185,10 @@ export const strings: Record<Language, AppStrings> = {
         headingLevel5: "Heading 5",
         headingLevel6: "Heading 6",
         headingContent: 'Heading text',
+        collapseBlock: 'Collapse',
+        expandBlock: 'Expand',
+        dropFileHint: 'Tip: drag an image or source code file anywhere onto the window to insert it quickly.',
+        droppedSkipped: 'Some files were skipped',
     },
     zh: {
         openFolder: '打开目录',
@@ -271,6 +279,10 @@ export const strings: Record<Language, AppStrings> = {
         headingLevel5: "五级标题",
         headingLevel6: "六级标题",
         headingContent: '标题内容',
+        collapseBlock: '折叠',
+        expandBlock: '展开',
+        dropFileHint: '提示：把图片或源代码文件拖入窗口任意位置，可快速插入。',
+        droppedSkipped: '部分文件被跳过',
     },
 };
 
