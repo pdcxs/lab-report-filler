@@ -92,23 +92,41 @@ Switch experiments using the list on the left. Each experiment page has:
 
 ### 6. Build your record with cards
 
-Click **Add block** to insert one of four card types. Each card can be dragged to reorder and deleted individually.
+Click **Add block** (at the top or bottom of the record) to insert a card. Each card can be dragged to reorder, collapsed to save space, and deleted individually.
 
-**Text card** — type your explanation. Typst syntax is supported:
+**Text card** — type your explanation. In the default mode, all Typst special characters are escaped automatically so you can type freely:
 
-- `= Heading` for level-1, `== Heading` for level-2, and so on.
-- `*bold*`, `_italic_`.
-- `` `inline code` `` for inline code.
-- `$x^2 + y^2 = r^2$` for inline math.
-- `#`, `[`, `]`, `@`, and `//` are escaped automatically, so you can type them safely.
+- `#`, `[`, `]`, `=`, `@`, and `//` are all safe to type — they will appear as ordinary text.
+- `*bold*`, `_italic_` still work.
+- `$x^2 + y^2 = r^2$` still renders as inline math.
+- A single line break starts a new paragraph.
+
+Turn on the **Raw Typst source** switch to write raw Typst without any escaping. Use this only if you know Typst. In raw mode, `[[Title]]` references are not processed.
+
+**Heading card** — pick a level (`=` to `======`, i.e. H1–H6) and type the heading text. Use this to structure your report with proper sections.
 
 **Image card** — pick a screenshot, give it a **title** (required), and adjust the display width. The title is used as the figure caption.
 
 **Code card** — choose a language, paste your code, and give it a **title** (required). The title is used as the listing caption.
 
-**Formula card** — use <https://typerino.com/> to compose the formula, paste it here. Every formula card is **automatically numbered** (`(1)`, `(2)`, …). Give it a **title** (optional) if you want to reference it from a text card; if left blank, the formula is still numbered but cannot be referenced.
+**Formula card** — choose a format and paste the formula:
 
-### 7. Reference other cards
+- **Typst** — paste a Typst formula such as `x^2 + y^2 = r^2` (with or without `$...$`).
+- **LaTeX** — paste a LaTeX formula such as `\frac{-b \pm \sqrt{b^2-4ac}}{2a}`. It is converted automatically via [mitex](https://github.com/mitex-rs/mitex).
+
+Every formula card is **automatically numbered** (`(1)`, `(2)`, …). Give it a **title** (optional) if you want to reference it from a text card; if left blank, the formula is still numbered but cannot be referenced.
+
+### 7. Drag files directly onto the window
+
+Instead of adding cards one by one, you can drag files from your file manager anywhere onto the app window:
+
+- **Image files** (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`) become **image cards**. The file name (without extension) is used as the title.
+- **Source code files** matching a language configured by your instructor (for example `.java`, `.py`, `.c`, `.cpp`) become **code cards**. The file name (with extension) is used as the title and the file content is inserted.
+- Files that cannot be recognized are skipped with a notification.
+
+Dropped cards are **collapsed by default** so you can quickly see what was inserted. Expand them to edit.
+
+### 8. Reference other cards
 
 Every image, code, and formula card with a title can be referenced from a text card using the syntax `[[Title]]`:
 
@@ -120,17 +138,17 @@ The easiest way to reference a card is to click **Insert Reference** in a text c
 
 **You should reference every image, code, and formula you insert.** Unreferenced cards are highlighted in yellow, and export will be blocked if your instructor enabled that check.
 
-### 8. Preview
+### 9. Preview
 
 The right panel shows a live preview of the generated PDF, refreshed 800 ms after your last edit.
 
-### 9. Validate and export
+### 10. Validate and export
 
 Click **Validate** to check for missing name, ID, or required blocks. If something is missing, a dialog tells you exactly what.
 
 Click **Export PDF** to generate `{Your Name} - {Your ID}.pdf` in the lab folder. You can click **Open Project Folder** in the top bar to open the folder in your file manager.
 
-### 10. Submit
+### 11. Submit
 
 Upload the PDF to your course's submission system.
 
@@ -139,6 +157,7 @@ Upload the PDF to your course's submission system.
 - **Switch projects**: click **Open ZIP** in the top bar to open another lab.
 - **Reopen last project**: the app opens your last lab folder automatically next time.
 - **Close the PDF before re-exporting**: if the PDF is open in a reader, the app will tell you to close it first.
+- **Collapse cards**: click the chevron on any card header to collapse it; drag is still available while collapsed.
 
 ---
 
@@ -155,7 +174,7 @@ Launch the app, click **I am a Teacher**.
 - **Default Class** — the class name shown on the cover. Students can override it.
 - **Default Location** — the lab room shown on the cover. Students can override it.
 - **Language** — `中文` or `English`. Controls the interface language students see.
-- **Code Languages** — one language per line. Students see these in the **Code card** dropdown.
+- **Code languages** — the languages students can choose in the **Code card** dropdown. For each language you can also set the **file extensions** used for drag-and-drop detection.
 
 ### 3. Configure student fields
 
@@ -165,7 +184,20 @@ The labels and placeholders for name, student ID, class, and location are set au
 - Whether the name must contain at least one Chinese character.
 - A regex pattern to validate the student ID format.
 
-### 4. Add experiments
+### 4. Configure code languages
+
+The **Code languages** section lists each language with two fields:
+
+- **Language name** — the name shown to students (for example `java`, `python`, `cpp`).
+- **Extensions** — comma-separated file extensions used to recognize source files when students drag them in (for example `java, jav`).
+
+If you leave the **Extensions** field empty, the app uses a **built-in default table** (for example `java` → `java, jav`, `python` → `py, pyw, pyi, rpy, ...`). Override it only if you want to restrict or extend the accepted extensions.
+
+If a dropped file's extension does not match any configured language, it is treated as the **first language in the list** (so unknown files are still inserted rather than rejected).
+
+You can add or remove languages with the **Add language** button and the delete icon next to each row.
+
+### 5. Add experiments
 
 Click **+ Add Experiment** to add experiments. For each experiment:
 
@@ -182,13 +214,13 @@ Click **+ Add Experiment** to add experiments. For each experiment:
 
 Drag experiments in the left panel to reorder them.
 
-### 5. Preview
+### 6. Preview
 
 Click **Open Preview** in the top bar to see the rendered report. The preview updates 800 ms after the last edit.
 
 The preview uses the default logo (Taiyuan University of Technology). To use another logo, click **Select Logo** and pick an image file.
 
-### 6. Export the package
+### 7. Export the package
 
 Click **Export ZIP** and choose where to save the ZIP. The app will:
 
@@ -198,11 +230,11 @@ Click **Export ZIP** and choose where to save the ZIP. The app will:
 
 Distribute the ZIP to your students (LMS, email, USB, etc.).
 
-### 7. Persistent draft
+### 8. Persistent draft
 
 Your edits are saved automatically to a draft in the app data folder. Close and reopen the app and your work-in-progress will be restored. Click **New** to start over with an empty template.
 
-### 8. Customizing the cover
+### 9. Customizing the cover
 
 To use a different institution's logo, click **Select Logo** and pick an image. It will be packaged as `imgs/tyut-logo.jpg` regardless of the original file name.
 

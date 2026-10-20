@@ -58,12 +58,14 @@ fn process_text(
                 if let Some(label) = exact_map.get(&x) {
                     out.push('@');
                     out.push_str(label);
+                    out.push(' ');
                     i = end + 2;
                     continue;
                 }
                 if let Some(label) = title_map.get(&x) {
                     out.push('@');
                     out.push_str(label);
+                    out.push(' ');
                     i = end + 2;
                     continue;
                 }
