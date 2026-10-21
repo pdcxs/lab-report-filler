@@ -10,6 +10,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { useLabStore } from '../state/useLabStore';
 import { useUiStore } from '../state/useUiStore';
+import { confirmDialog } from '../utils/dialogs';
 
 export function ZipExtractModal() {
     const pendingZip = useUiStore((s) => s.pendingZip);
@@ -36,10 +37,19 @@ export function ZipExtractModal() {
                 return;
             } catch (e) {
                 if (String(e).includes('DIR_NOT_EMPTY')) {
-                    const retry = window.confirm(
-                        '所选文件夹不为空，是否重新选择？\n' +
-                        'The folder is not empty. Choose another one?',
-                    );
+                    const retry = await confirmDialog({
+                        title: '文件夹不为空 / Folder not empty',
+                        message: (
+                            <Stack gap="xs">
+                                <Text size="sm">所选文件夹不为空，是否重新选择？</Text>
+                                <Text size="sm" c="dimmed">
+                                    The folder is not empty. Choose another one?
+                                </Text>
+                            </Stack>
+                        ),
+                        confirmLabel: '重新选择 / Choose again',
+                        cancelLabel: '取消 / Cancel',
+                    });
                     if (!retry) {
                         cancelOpenZip();
                         return;
