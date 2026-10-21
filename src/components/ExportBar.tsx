@@ -1,15 +1,9 @@
-import { useState } from 'react';
-import { Box, Button, Group, List, Modal, Stack, Text } from '@mantine/core';
+import { Box, Button, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useLabStore } from '../state/useLabStore';
 import { useT } from '../i18n/useT';
+import { reportDialog } from './modals';
 import type { ValidationReport } from '../types/lab-config';
-
-interface ErrorModalState {
-    title: string;
-    lines: string[];
-    detail?: string;
-}
 
 export function ExportBar() {
     const t = useT();
@@ -18,8 +12,6 @@ export function ExportBar() {
     const exporting = useLabStore((s) => s.exporting);
     const validate = useLabStore((s) => s.validate);
     const exportPdf = useLabStore((s) => s.exportPdf);
-
-    const [errorModal, setErrorModal] = useState<ErrorModalState | null>(null);
 
     const buildLines = (report: ValidationReport): string[] => {
         const lines: string[] = [];
@@ -50,13 +42,21 @@ export function ExportBar() {
         return lines;
     };
 
+    const showValidationFailure = (report: ValidationReport) => {
+        reportDialog({
+            title: t('validationFailed'),
+            lines: buildLines(report),
+            confirmLabel: t('confirm'),
+        });
+    };
+
     const handleValidate = async () => {
         const report = await validate();
         if (!report) return;
         if (report.passed) {
             notifications.show({ color: 'green', title: 'OK', message: t('validationPassed') });
         } else {
-            setErrorModal({ title: t('validationFailed'), lines: buildLines(report) });
+            showValidationFailure(report);
         }
     };
 
@@ -64,7 +64,7 @@ export function ExportBar() {
         const report = await validate();
         if (!report) return;
         if (!report.passed) {
-            setErrorModal({ title: t('validationFailed'), lines: buildLines(report) });
+            showValidationFailure(report);
             return;
         }
         try {
@@ -79,75 +79,40 @@ export function ExportBar() {
         } catch (e) {
             const msg = String(e);
             if (msg.includes('PDF_LOCKED')) {
-                setErrorModal({ title: 'Export failed', lines: [t('exportLocked')] });
+                reportDialog({
+                    title: 'Export failed',
+                    lines: [t('exportLocked')],
+                    confirmLabel: t('confirm'),
+                });
             } else {
-                setErrorModal({
+                reportDialog({
                     title: 'Export failed',
                     lines: ['Typst could not compile the report.'],
                     detail: msg,
+                    confirmLabel: t('confirm'),
                 });
             }
         }
     };
 
     return (
-        <>
-            <Box
-                p="xs"
-                px="md"
-                style={{
-                    borderTop: '1px solid var(--mantine-color-gray-3)',
-                    flexShrink: 0,
-                    background: 'var(--mantine-color-body)',
-                }}
-            >
-                <Group justify="flex-end">
-                    <Button variant="default" loading={validating} onClick={() => void handleValidate()}>
-                        {t('validate')}
-                    </Button>
-                    <Button loading={exporting} onClick={() => void handleExport()}>
-                        {t('export')}
-                    </Button>
-                </Group>
-            </Box>
-
-            <Modal
-                opened={errorModal !== null}
-                onClose={() => setErrorModal(null)}
-                title={errorModal?.title ?? ''}
-                size={errorModal?.detail ? 'xl' : 'lg'}
-                centered
-            >
-                <Stack gap="sm">
-                    {errorModal && errorModal.lines.length > 0 && (
-                        <List spacing="xs">
-                            {errorModal.lines.map((line, i) => (
-                                <List.Item key={i}>
-                                    <Text style={{ whiteSpace: 'pre-wrap' }}>{line}</Text>
-                                </List.Item>
-                            ))}
-                        </List>
-                    )}
-                    {errorModal?.detail && (
-                        <Box
-                            style={{
-                                maxHeight: 400,
-                                overflow: 'auto',
-                                background: 'var(--mantine-color-gray-1)',
-                                borderRadius: 6,
-                                padding: 12,
-                            }}
-                        >
-                            <Text size="xs" style={{ whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace' }}>
-                                {errorModal.detail}
-                            </Text>
-                        </Box>
-                    )}
-                    <Group justify="flex-end">
-                        <Button onClick={() => setErrorModal(null)}>{t('confirm')}</Button>
-                    </Group>
-                </Stack>
-            </Modal>
-        </>
+        <Box
+            p="xs"
+            px="md"
+            style={{
+                borderTop: '1px solid var(--mantine-color-gray-3)',
+                flexShrink: 0,
+                background: 'var(--mantine-color-body)',
+            }}
+        >
+            <Group justify="flex-end">
+                <Button variant="default" loading={validating} onClick={() => void handleValidate()}>
+                    {t('validate')}
+                </Button>
+                <Button loading={exporting} onClick={() => void handleExport()}>
+                    {t('export')}
+                </Button>
+            </Group>
+        </Box>
     );
 }

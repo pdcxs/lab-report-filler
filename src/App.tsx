@@ -5,8 +5,7 @@ import { RoleSelection } from './components/RoleSelection';
 import { StudentWelcome } from './components/StudentWelcome';
 import { TeacherWorkspace } from './components/TeacherWorkspace';
 import { Workspace } from './components/Workspace';
-import { ZipExtractModal } from './components/ZipExtractModal';
-import { TypstMissingModal } from './components/TypstMissingModal';
+import { AppModals } from './components/modals';
 
 export default function App() {
   const dir = useLabStore((s) => s.dir);
@@ -31,8 +30,7 @@ export default function App() {
   return (
     <Box style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {content}
-      <ZipExtractModal />
-      <TypstMissingModal />
+      <AppModals />
     </Box>
   );
 }

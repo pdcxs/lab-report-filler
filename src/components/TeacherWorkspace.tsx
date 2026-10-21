@@ -3,7 +3,6 @@ import {
     Box,
     Button,
     Card,
-    Modal,
     Checkbox,
     Group,
     NumberInput,
@@ -41,6 +40,7 @@ import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { TeacherPreview } from './TeacherPreview';
 import { CodeLanguagesEditor } from './CodeLanguagesEditor';
 import { useT } from '../i18n/useT';
+import { confirmDialog } from './modals';
 
 interface TeacherExportResult {
     zipPath: string;
@@ -117,11 +117,6 @@ export function TeacherWorkspace() {
     const [exporting, setExporting] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [logoPath, setLogoPath] = useState<string | null>(null);
-    const [pendingTemplate, setPendingTemplate] = useState<{
-        config: LabConfig;
-        path: string;
-    } | null>(null);
-    const [confirmNewOpen, setConfirmNewOpen] = useState(false);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -184,23 +179,28 @@ export function TeacherWorkspace() {
             ) {
                 throw new Error('不是有效的模板文件 / Not a valid template file');
             }
-            setPendingTemplate({ config: parsed, path });
-        } catch (e) {
-            notifications.show({
-                color: 'red',
-                title: '打开失败',
-                message: String(e),
-                autoClose: 8000,
-            });
-        }
-    };
 
-    const confirmLoadTemplate = async () => {
-        if (!pendingTemplate) return;
-        const { config: cfg, path } = pendingTemplate;
-        setPendingTemplate(null);
-        try {
-            await loadConfig(cfg);
+            const confirmed = await confirmDialog({
+                title: '确认打开模板',
+                message: (
+                    <Stack gap="md">
+                        <Text>打开模板会替换当前编辑的内容，是否继续？</Text>
+                        <Text
+                            size="xs"
+                            c="dimmed"
+                            style={{ wordBreak: 'break-all', fontFamily: 'monospace' }}
+                        >
+                            {path}
+                        </Text>
+                    </Stack>
+                ),
+                confirmLabel: '确认替换',
+                cancelLabel: '取消',
+                confirmColor: 'red',
+            });
+            if (!confirmed) return;
+
+            await loadConfig(parsed);
             notifications.show({
                 color: 'green',
                 title: '已打开',
@@ -217,21 +217,15 @@ export function TeacherWorkspace() {
         }
     };
 
-    const cancelLoadTemplate = () => {
-        setPendingTemplate(null);
-    };
-
-    const handleNewConfig = () => {
-        setConfirmNewOpen(true);
-    };
-
-    const confirmNewConfig = async () => {
-        setConfirmNewOpen(false);
-        await newConfig();
-    };
-
-    const cancelNewConfig = () => {
-        setConfirmNewOpen(false);
+    const handleNewConfig = async () => {
+        const confirmed = await confirmDialog({
+            title: '确认新建',
+            message: '新建会清空当前正在编辑的内容，是否继续？',
+            confirmLabel: '确认新建',
+            cancelLabel: '取消',
+            confirmColor: 'red',
+        });
+        if (confirmed) await newConfig();
     };
 
     const handleExport = async () => {
@@ -600,53 +594,6 @@ export function TeacherWorkspace() {
                     {previewOpen && <TeacherPreview logoPath={logoPath} />}
                 </Group>
             </Box>
-            <Modal
-                opened={pendingTemplate !== null}
-                onClose={cancelLoadTemplate}
-                title="确认打开模板"
-                centered
-                closeOnClickOutside={false}
-            >
-                <Stack gap="md">
-                    <Text>打开模板会替换当前编辑的内容，是否继续？</Text>
-                    {pendingTemplate && (
-                        <Text
-                            size="xs"
-                            c="dimmed"
-                            style={{ wordBreak: 'break-all', fontFamily: 'monospace' }}
-                        >
-                            {pendingTemplate.path}
-                        </Text>
-                    )}
-                    <Group justify="flex-end">
-                        <Button variant="default" onClick={cancelLoadTemplate}>
-                            取消
-                        </Button>
-                        <Button color="red" onClick={() => void confirmLoadTemplate()}>
-                            确认替换
-                        </Button>
-                    </Group>
-                </Stack>
-            </Modal>
-            <Modal
-                opened={confirmNewOpen}
-                onClose={cancelNewConfig}
-                title="确认新建"
-                centered
-                closeOnClickOutside={false}
-            >
-                <Stack gap="md">
-                    <Text>新建会清空当前正在编辑的内容，是否继续？</Text>
-                    <Group justify="flex-end">
-                        <Button variant="default" onClick={cancelNewConfig}>
-                            取消
-                        </Button>
-                        <Button color="red" onClick={() => void confirmNewConfig()}>
-                            确认新建
-                        </Button>
-                    </Group>
-                </Stack>
-            </Modal>
         </>
     );
 }
